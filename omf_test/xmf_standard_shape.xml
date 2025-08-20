@@ -1,0 +1,225 @@
+<?xml version="1.0"?>
+<Project>
+<Beams type="prop">
+	<None type="flat"></None>
+	<geometricSource01beamGlobal01 type="flat"></geometricSource01beamGlobal01>
+	<ellipticalMirrorParam01beamGlobal01 type="flat"></ellipticalMirrorParam01beamGlobal01>
+	<ellipticalMirrorParam01beamLocal01 type="flat"></ellipticalMirrorParam01beamLocal01>
+	<screen01beamLocal01 type="flat"></screen01beamLocal01>
+</Beams>
+<Materials type="prop">
+</Materials>
+<beamLine type="value">
+	<properties type="prop">
+		<azimuth type="param">0.0</azimuth>
+		<height type="param">0.0</height>
+		<alignE type="param">auto</alignE>
+	</properties>
+	<_object type="object">xrt.backends.raycing.BeamLine</_object>
+	<geometricSource01 type="value">
+		<properties type="prop">
+			<bl type="param">beamLine</bl>
+			<name type="param">None</name>
+			<center type="param">(0, 0, 0)</center>
+			<pitch type="param">0</pitch>
+			<roll type="param">0</roll>
+			<yaw type="param">0</yaw>
+			<nrays type="param">100000</nrays>
+			<distx type="param">normal</distx>
+			<dx type="param">1</dx>
+			<disty type="param">None</disty>
+			<dy type="param">0</dy>
+			<distz type="param">normal</distz>
+			<dz type="param">1</dz>
+			<distxprime type="param">normal</distxprime>
+			<dxprime type="param">0.001</dxprime>
+			<distzprime type="param">normal</distzprime>
+			<dzprime type="param">0.001</dzprime>
+			<distE type="param">lines</distE>
+			<energies type="param">(9000.0,)</energies>
+			<polarization type="param">horizontal</polarization>
+			<filamentBeam type="param">False</filamentBeam>
+			<uniformRayDensity type="param">False</uniformRayDensity>
+		</properties>
+		<_object type="object">xrt.backends.raycing.sources.GeometricSource</_object>
+		<shine type="prop">
+			<parameters type="prop">
+				<toGlobal type="param">True</toGlobal>
+				<withAmplitudes type="param">False</withAmplitudes>
+				<accuBeam type="param">None</accuBeam>
+			</parameters>
+			<_object type="object">xrt.backends.raycing.sources.GeometricSource.shine</_object>
+			<output type="prop">
+				<beamGlobal type="param">geometricSource01beamGlobal01</beamGlobal>
+			</output>
+		</shine>
+	</geometricSource01>
+	<ellipticalMirrorParam01 type="value">
+		<properties type="prop">
+			<bl type="param">beamLine</bl>
+			<name type="param"></name>
+			<center type="param">[0, 5000, 0]</center>
+			<pitch type="param">2 deg</pitch>
+			<roll type="param">0</roll>
+			<yaw type="param">0</yaw>
+			<positionRoll type="param">0</positionRoll>
+			<extraPitch type="param">0</extraPitch>
+			<extraRoll type="param">0</extraRoll>
+			<extraYaw type="param">0</extraYaw>
+			<rotationSequence type="param">RzRyRx</rotationSequence>
+			<extraRotationSequence type="param">RzRyRx</extraRotationSequence>
+			<surface type="param">None</surface>
+			<material type="param">None</material>
+			<alpha type="param">None</alpha>
+			<limPhysX type="param">[-10.0, 10.0]</limPhysX>
+			<limOptX type="param">None</limOptX>
+			<limPhysY type="param">[-1000.0, 1000.0]</limPhysY>
+			<limOptY type="param">None</limOptY>
+			<isParametric type="param">False</isParametric>
+			<shape type="param">rect</shape>
+			<gratingDensity type="param">None</gratingDensity>
+			<order type="param">None</order>
+			<shouldCheckCenter type="param">False</shouldCheckCenter>
+			<p type="param">5000</p>
+			<q type="param">1000</q>
+			<isCylindrical type="param">False</isCylindrical>
+			<isClosed type="param">False</isClosed>
+			<alarmLevel type="param">None</alarmLevel>
+			<f1 type="param">None</f1>
+			<f2 type="param">None</f2>
+			<pAxis type="param">None</pAxis>
+			<targetOpenCL type="param">None</targetOpenCL>
+			<precisionOpenCL type="param">float64</precisionOpenCL>
+		</properties>
+		<_object type="object">xrt.backends.raycing.oes.EllipticalMirrorParam</_object>
+		<reflect type="prop">
+			<parameters type="prop">
+				<beam type="param">geometricSource01beamGlobal01</beam>
+				<needLocal type="param">True</needLocal>
+				<noIntersectionSearch type="param">False</noIntersectionSearch>
+				<returnLocalAbsorbed type="param">None</returnLocalAbsorbed>
+			</parameters>
+			<_object type="object">xrt.backends.raycing.oes.EllipticalMirrorParam.reflect</_object>
+			<output type="prop">
+				<beamGlobal type="param">ellipticalMirrorParam01beamGlobal01</beamGlobal>
+				<beamLocal type="param">ellipticalMirrorParam01beamLocal01</beamLocal>
+			</output>
+		</reflect>
+	</ellipticalMirrorParam01>
+	<screen01 type="value">
+		<properties type="prop">
+			<bl type="param">beamLine</bl>
+			<name type="param"></name>
+			<center type="param">[0, 6000, 0]</center>
+			<x type="param">auto</x>
+			<z type="param">auto</z>
+			<compressX type="param">None</compressX>
+			<compressZ type="param">None</compressZ>
+		</properties>
+		<_object type="object">xrt.backends.raycing.screens.Screen</_object>
+		<expose type="prop">
+			<parameters type="prop">
+				<beam type="param">ellipticalMirrorParam01beamGlobal01</beam>
+				<onlyPositivePath type="param">False</onlyPositivePath>
+			</parameters>
+			<_object type="object">xrt.backends.raycing.screens.Screen.expose</_object>
+			<output type="prop">
+				<beamLocal type="param">screen01beamLocal01</beamLocal>
+			</output>
+		</expose>
+	</screen01>
+</beamLine>
+<plots type="value">
+	<plot01 type="value">
+		<_object type="object">xrt.plotter.XYCPlot</_object>
+		<beam type="param">screen01beamLocal01</beam>
+		<rayFlag type="param">(1,)</rayFlag>
+		<xaxis type="prop">
+			<_object type="object">xrt.plotter.XYCAxis</_object>
+			<label type="param">x</label>
+			<unit type="param">mm</unit>
+			<factor type="param">None</factor>
+			<data type="param">auto</data>
+			<limits type="param">None</limits>
+			<offset type="param">0</offset>
+			<bins type="param">128</bins>
+			<ppb type="param">2</ppb>
+			<density type="param">histogram</density>
+			<invertAxis type="param">False</invertAxis>
+			<outline type="param">0.5</outline>
+			<fwhmFormatStr type="param">%.1f</fwhmFormatStr>
+		</xaxis>
+		<yaxis type="prop">
+			<_object type="object">xrt.plotter.XYCAxis</_object>
+			<label type="param">z</label>
+			<unit type="param">mm</unit>
+			<factor type="param">None</factor>
+			<data type="param">auto</data>
+			<limits type="param">None</limits>
+			<offset type="param">0</offset>
+			<bins type="param">128</bins>
+			<ppb type="param">2</ppb>
+			<density type="param">histogram</density>
+			<invertAxis type="param">False</invertAxis>
+			<outline type="param">0.5</outline>
+			<fwhmFormatStr type="param">%.1f</fwhmFormatStr>
+		</yaxis>
+		<caxis type="prop">
+			<_object type="object">xrt.plotter.XYCAxis</_object>
+			<label type="param">energy</label>
+			<unit type="param">eV</unit>
+			<factor type="param">None</factor>
+			<data type="param">auto</data>
+			<limits type="param">None</limits>
+			<offset type="param">0</offset>
+			<bins type="param">128</bins>
+			<ppb type="param">2</ppb>
+			<density type="param">histogram</density>
+			<invertAxis type="param">False</invertAxis>
+			<outline type="param">0.5</outline>
+			<fwhmFormatStr type="param">%.1f</fwhmFormatStr>
+		</caxis>
+		<aspect type="param">equal</aspect>
+		<xPos type="param">1</xPos>
+		<yPos type="param">1</yPos>
+		<ePos type="param">1</ePos>
+		<title type="param">plot01</title>
+		<invertColorMap type="param">False</invertColorMap>
+		<negative type="param">False</negative>
+		<fluxKind type="param">total</fluxKind>
+		<fluxUnit type="param">auto</fluxUnit>
+		<fluxFormatStr type="param">auto</fluxFormatStr>
+		<contourLevels type="param">None</contourLevels>
+		<contourColors type="param">None</contourColors>
+		<contourFmt type="param">%.1f</contourFmt>
+		<contourFactor type="param">1.0</contourFactor>
+		<saveName type="param">None</saveName>
+		<persistentName type="param">None</persistentName>
+		<oe type="param">None</oe>
+		<raycingParam type="param">0</raycingParam>
+		<beamState type="param">None</beamState>
+		<beamC type="param">None</beamC>
+		<useQtWidget type="param">False</useQtWidget>
+	</plot01>
+</plots>
+<run_ray_tracing type="prop">
+	<_object type="object">xrt.runner.run_ray_tracing</_object>
+	<plots type="param">plots</plots>
+	<repeats type="param">1</repeats>
+	<updateEvery type="param">1</updateEvery>
+	<pickleEvery type="param">None</pickleEvery>
+	<energyRange type="param">None</energyRange>
+	<backend type="param">raycing</backend>
+	<beamLine type="param">beamLine</beamLine>
+	<threads type="param">1</threads>
+	<processes type="param">1</processes>
+	<generator type="param">None</generator>
+	<generatorArgs type="param">[]</generatorArgs>
+	<generatorKWargs type="param">auto</generatorKWargs>
+	<globalNorm type="param">0</globalNorm>
+	<afterScript type="param">None</afterScript>
+	<afterScriptArgs type="param">[]</afterScriptArgs>
+	<afterScriptKWargs type="param">{}</afterScriptKWargs>
+</run_ray_tracing>
+<description></description>
+</Project>
