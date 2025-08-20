@@ -13,7 +13,7 @@ Created with xrtQook
 
 import numpy as np
 import sys
-sys.path.append(r"/Users/lhuang/Documents/GitHub/xrt")
+sys.path.append(r"D:\GitHub\xrt")
 import xrt.backends.raycing.sources as rsources
 import xrt.backends.raycing.screens as rscreens
 import xrt.backends.raycing.materials as rmats
@@ -31,35 +31,38 @@ import xrt.runner as xrtrun
 def build_beamline():
     beamLine = raycing.BeamLine()
 
-    beamLine.geometricSource01 = rsources.GeometricSource(
+    beamLine.geometricSource = rsources.GeometricSource(
         bl=beamLine,
         name=None,
         center=[0, 0, 0],
-        dx=1,
-        dz=1,
+        dx=0.0212,
+        dz=0.0212,
         dzprime=0.001)
 
-    beamLine.ellipticalMirrorParam01 = roes.EllipticalMirrorParam(
+    beamLine.ellipticalMirrorParam = roes.EllipticalMirrorParam(
         bl=beamLine,
+        name=None,
         center=[0, 5000, 0],
         pitch=r"2 deg",
         limPhysX=[-10.0, 10.0],
-        p=5000)
+        p=5000,
+        q=5000)
 
-    beamLine.screen01 = rscreens.Screen(
+    beamLine.screen = rscreens.Screen(
         bl=beamLine,
-        center=[0, 6000, 0])
+        name=None,
+        center=[0, 10000, 0])
 
     return beamLine
 
 
 def run_process(beamLine):
-    geometricSource01beamGlobal01 = beamLine.geometricSource01.shine()
+    geometricSource01beamGlobal01 = beamLine.geometricSource.shine()
 
-    ellipticalMirrorParam01beamGlobal01, ellipticalMirrorParam01beamLocal01 = beamLine.ellipticalMirrorParam01.reflect(
+    ellipticalMirrorParam01beamGlobal01, ellipticalMirrorParam01beamLocal01 = beamLine.ellipticalMirrorParam.reflect(
         beam=geometricSource01beamGlobal01)
 
-    screen01beamLocal01 = beamLine.screen01.expose(
+    screen01beamLocal01 = beamLine.screen.expose(
         beam=ellipticalMirrorParam01beamGlobal01)
 
     outDict = {
@@ -77,23 +80,40 @@ rrun.run_process = run_process
 def define_plots():
     plots = []
 
-    plot01 = xrtplot.XYCPlot(
-        beam=r"screen01beamLocal01",
+    Source = xrtplot.XYCPlot(
+        beam=r"geometricSource01beamGlobal01",
         xaxis=xrtplot.XYCAxis(
-            label=r"x"),
+            label=r"x",
+            fwhmFormatStr=r"%.4f"),
         yaxis=xrtplot.XYCAxis(
-            label=r"z"),
+            label=r"z",
+            fwhmFormatStr=r"%.4f"),
         caxis=xrtplot.XYCAxis(
             label=r"energy",
             unit=r"eV"),
-        title=r"plot01")
-    plots.append(plot01)
+        title=r"Source")
+    plots.append(Source)
+
+    Focus = xrtplot.XYCPlot(
+        beam=r"screen01beamLocal01",
+        xaxis=xrtplot.XYCAxis(
+            label=r"x",
+            fwhmFormatStr=r"%.4f"),
+        yaxis=xrtplot.XYCAxis(
+            label=r"z",
+            fwhmFormatStr=r"%.4f"),
+        caxis=xrtplot.XYCAxis(
+            label=r"energy",
+            unit=r"eV"),
+        aspect=r"auto",
+        title=r"Focus")
+    plots.append(Focus)
     return plots
 
 
 def main():
     beamLine = build_beamline()
-    E0 = list(beamLine.geometricSource01.energies)[0]
+    E0 = list(beamLine.geometricSource.energies)[0]
     beamLine.alignE=E0
     plots = define_plots()
     xrtrun.run_ray_tracing(
