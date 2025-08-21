@@ -1,14 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 
-__author__ = "Konstantin Klementiev", "Roman Chernikov"
-__date__ = "2025-08-20"
-
-Created with xrtQook
-
-
-
-
 """
 
 import numpy as np
@@ -27,7 +19,6 @@ import xrt.backends.raycing as raycing
 import xrt.plotter as xrtplot
 import xrt.runner as xrtrun
 
-
 def build_beamline():
     beamLine = raycing.BeamLine()
 
@@ -39,7 +30,7 @@ def build_beamline():
         dz=0.0212,
         dzprime=0.001)
 
-    beamLine.ellipticalMirrorParam = roes.EllipticalMirrorParam(
+    beamLine.mirror = roes.EllipsoidalMirrorXMF(
         bl=beamLine,
         name=None,
         center=[0, 5000, 0],
@@ -47,8 +38,8 @@ def build_beamline():
         limPhysX=[-10.0, 10.0],
         p=5000,
         q=1000)
-
-    # xrt_ellipsoid = roes.EllipticalMirrorParam(
+    
+    # beamLine.mirror = roes.EllipticalMirror(
     #     bl=beamLine,
     #     name=None,
     #     center=[0, 5000, 0],
@@ -56,17 +47,7 @@ def build_beamline():
     #     limPhysX=[-10.0, 10.0],
     #     p=5000,
     #     q=1000)
-
-    # xmf_ellipsoid = roes.EllipsoidalMirrorXMF(
-    #     bl=beamLine,
-    #     name=None,
-    #     center=[0, 5000, 0],
-    #     pitch=r"2 deg",
-    #     limPhysX=[-10.0, 10.0],
-    #     p=5000,
-    #     q=1000)
-
-
+    
     beamLine.screen = rscreens.Screen(
         bl=beamLine,
         name=None,
@@ -78,16 +59,16 @@ def build_beamline():
 def run_process(beamLine):
     geometricSource01beamGlobal01 = beamLine.geometricSource.shine()
 
-    ellipticalMirrorParam01beamGlobal01, ellipticalMirrorParam01beamLocal01 = beamLine.ellipticalMirrorParam.reflect(
+    mirror01beamGlobal01, mirror01beamLocal01 = beamLine.mirror.reflect(
         beam=geometricSource01beamGlobal01)
 
     screen01beamLocal01 = beamLine.screen.expose(
-        beam=ellipticalMirrorParam01beamGlobal01)
+        beam=mirror01beamGlobal01)
 
     outDict = {
         'geometricSource01beamGlobal01': geometricSource01beamGlobal01,
-        'ellipticalMirrorParam01beamGlobal01': ellipticalMirrorParam01beamGlobal01,
-        'ellipticalMirrorParam01beamLocal01': ellipticalMirrorParam01beamLocal01,
+        'mirror01beamGlobal01': mirror01beamGlobal01,
+        'mirror01beamLocal01': mirror01beamLocal01,
         'screen01beamLocal01': screen01beamLocal01}
     return outDict
 
