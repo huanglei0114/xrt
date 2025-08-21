@@ -32,9 +32,9 @@
 			<distz type="param">normal</distz>
 			<dz type="param">0.0212</dz>
 			<distxprime type="param">normal</distxprime>
-			<dxprime type="param">0.001</dxprime>
+			<dxprime type="param">0.00001</dxprime>
 			<distzprime type="param">normal</distzprime>
-			<dzprime type="param">0.001</dzprime>
+			<dzprime type="param">0.00001</dzprime>
 			<distE type="param">lines</distE>
 			<energies type="param">(9000.0,)</energies>
 			<polarization type="param">horizontal</polarization>
@@ -81,7 +81,7 @@
 			<order type="param">None</order>
 			<shouldCheckCenter type="param">False</shouldCheckCenter>
 			<p type="param">5000</p>
-			<q type="param">5000</q>
+			<q type="param">1000</q>
 			<isCylindrical type="param">False</isCylindrical>
 			<isClosed type="param">False</isClosed>
 			<alarmLevel type="param">None</alarmLevel>
@@ -110,7 +110,7 @@
 		<properties type="prop">
 			<bl type="param">beamLine</bl>
 			<name type="param">None</name>
-			<center type="param">[0, 10000, 0]</center>
+			<center type="param">[0, 6000, 0]</center>
 			<x type="param">auto</x>
 			<z type="param">auto</z>
 			<compressX type="param">None</compressX>
