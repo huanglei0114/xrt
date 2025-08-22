@@ -53,7 +53,7 @@ def build_beamline():
         bl=beamLine,
         name=None,
         center=[0, 5000, 0],
-        pitch=r"2 deg",
+        pitch=30e-3,
         limPhysX=[-10.0, 10.0],
         p=5000,
         q=1000)
@@ -62,15 +62,15 @@ def build_beamline():
     #     bl=beamLine,
     #     name=None,
     #     center=[0, 5000, 0],
-    #     pitch=r"2 deg",
+    #     pitch=30e-3,
     #     limPhysX=[-10.0, 10.0],
     #     p=5000,
     #     q=1000)
-    
+
     beamLine.screen = rscreens.Screen(
         bl=beamLine,
         name=None,
-        center=[0, 6000, 0])
+        center=[0, 5000+1000, 0])
 
     return beamLine
 

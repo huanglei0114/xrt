@@ -1562,12 +1562,27 @@ class EllipticCylindricalMirrorXMF(OE):
    def local_n(self, x, y):
         """Determines the normal vector of OE at (x, y) position."""
         z, surf_normal = standard_concave_elliptic_cylinder_height(y*1e-3,self.p*1e-3,self.q*1e-3,self.pitch, return_surface_normal_as_extra=True)
-        # z, surf_normal = standard_concave_hyperbolic_cylinder_height(y*1e-3,self.p*1e-3,self.q*1e-3,self.pitch, return_surface_normal_as_extra=True)
-        surface_normal = []
-        surface_normal.append(-surf_normal[1])
-        surface_normal.append(surf_normal[0])
-        surface_normal.append(surf_normal[2])
+        # # z, surf_normal = standard_concave_hyperbolic_cylinder_height(y*1e-3,self.p*1e-3,self.q*1e-3,self.pitch, return_surface_normal_as_extra=True)
 
+        # surface_normal = []
+        # surface_normal.append(-surf_normal[1])
+        # surface_normal.append(surf_normal[0])
+        # surface_normal.append(surf_normal[2])
+
+
+        sx_xmf = standard_concave_elliptic_cylinder_xslope(y*1e-3,self.p*1e-3,self.q*1e-3,self.pitch)
+
+        nx = sx_xmf*0
+        ny = -sx_xmf
+        nz = 1.0
+
+        norm = (nx**2 + ny**2 + nz**2)**0.5
+        nx /= norm
+        ny /= norm
+        nz /= norm
+
+        surface_normal = [nx, ny, nz]
+ 
         print(min(surface_normal[0]), max(surface_normal[0]))
         print(min(surface_normal[1]), max(surface_normal[1]))
         print(min(surface_normal[2]), max(surface_normal[2]))
@@ -4515,39 +4530,6 @@ def standard_quadric_cylinder_height(x: np.ndarray,
     else:
         return z_quad_sln
 
-def standard_convex_elliptic_cylinder_height(x: np.ndarray,
-                                             abs_p: float,
-                                             abs_q: float,
-                                             theta: float,
-                                             return_z_expression_as_extra: bool = False):
-
-    """
-    The standard convex elliptic cylinder height with (``abs_p``, ``abs_q``, ``theta``)
-
-    Parameters
-    ----------
-        x: `numpy.ndarray`
-            The x coordinates
-        abs_p: `float`
-            The ``abs_p`` value: the absolute value of the distance between the source and the chief ray intersection
-        abs_q: `float`
-            The ``abs_q`` value: the absolute value of the distance between the chief ray intersection and the focus
-        theta: `float`
-            The grazing angle
-        return_z_expression_as_extra: `bool`
-            If True, return the z_expression as well
-    Returns
-    -------
-        z: `numpy.ndarray`
-            The height
-    """
-
-    # Give the sign to p and q based on mirror type
-    p = -abs_p
-    q = -abs_q
-
-    return standard_quadric_cylinder_height(x, p, q, theta, return_z_expression_as_extra)
-
 def standard_concave_elliptic_cylinder_height(x: np.ndarray,
                                               abs_p: float,
                                               abs_q: float,
@@ -4618,3 +4600,66 @@ def standard_concave_hyperbolic_cylinder_height(x: np.ndarray,
         q = - abs_q
 
     return standard_quadric_cylinder_height(x, p, q, theta, return_z_expression_as_extra, return_surface_normal_as_extra)
+
+
+def standard_quadric_cylinder_xslope(x: np.ndarray,
+                              p: float,
+                              q: float,
+                              theta: float):
+
+    """
+    The standard quadric cylinder slope with (``p``, ``q``, ``theta``)
+
+    Parameters
+    ----------
+        x: `numpy.ndarray`
+            The x coordinates
+        p: `float`
+            The ``p`` value: the distance from the source to the chief ray intersection
+        q: `float`
+            The ``q`` value: the distance from the chief ray intersection to the focus
+        theta: `float`
+            The grazing angle
+    Returns
+    -------
+        sx: `numpy.ndarray`
+            The x-slope
+    """
+    if (p*q>0): # Elliptic cylinder
+        sx = (p+q)*np.sin(theta)/((p+q)**2-(p-q)**2*np.sin(theta)**2)*(-(p-q)*np.cos(theta) + (2*p*q*x + p*q*(p-q)*np.cos(theta))/np.sqrt(-p*q*x**2 - p*q*(p-q)*x*np.cos(theta) + p**2*q**2))
+    elif (p*q<0): # Hyperbolic cylinder
+        sx = (p+q)*np.sin(theta)/((p+q)**2-(p-q)**2*np.sin(theta)**2)*(-(p-q)*np.cos(theta) - (2*p*q*x + p*q*(p-q)*np.cos(theta))/np.sqrt(-p*q*x**2 - p*q*(p-q)*x*np.cos(theta) + p**2*q**2))
+    sx[np.imag(sx)!=0] = np.nan
+
+    return sx
+
+
+
+def standard_concave_elliptic_cylinder_xslope(x: np.ndarray,
+                              abs_p: float,
+                              abs_q: float,
+                              theta: float):
+
+    """
+    The standard concave elliptic cylinder x-slope with (``abs_p``, ``abs_q``, ``theta``)
+
+    Parameters
+    ----------
+        x: `numpy.ndarray`
+            The x coordinates
+        abs_p: `float`
+            The ``abs_p`` value: the absolute value of the distance between the source and the chief ray intersection
+        abs_q: `float`
+            The ``abs_q`` value: the absolute value of the distance between the chief ray intersection and the focus
+        theta: `float`
+            The grazing angle
+    Returns
+    -------
+        sx: `numpy.ndarray`
+            The x-slope
+    """
+    p = abs_p
+    q = abs_q
+    
+    sx_expression_quadrics = standard_quadric_cylinder_xslope(x, p, q, theta)
+    return sx_expression_quadrics
