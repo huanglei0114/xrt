@@ -19,6 +19,7 @@ import xrt.backends.raycing as raycing
 import xrt.plotter as xrtplot
 import xrt.runner as xrtrun
 
+
 def build_beamline():
     beamLine = raycing.BeamLine()
 
@@ -26,51 +27,72 @@ def build_beamline():
         bl=beamLine,
         name=None,
         center=[0, 0, 0],
-        dx=0.0212,
-        dz=0.0212,
-        dxprime=10e-6,
-        dzprime=500e-6)
+        dx=0.000212,
+        dz=0.000212,
+        dxprime=0.002,
+        dzprime=0.002)
 
-    # beamLine.mirror = roes.EllipticalMirrorParam(
+   
+    # beamLine.Mirror = roes.EllipticalMirrorParam(
     #     bl=beamLine,
     #     name=None,
     #     center=[0, 5000, 0],
-    #     pitch=r"2 deg",
+    #     pitch=r"30 mrad",
     #     limPhysX=[-10.0, 10.0],
+    #     limPhysY=[-450.0, 450.0],
     #     p=5000,
     #     q=1000)
     
-    # beamLine.mirror = roes.EllipsoidalMirrorXMF(
+    # beamLine.Mirror = roes.EllipsoidalMirrorXMF(
     #     bl=beamLine,
     #     name=None,
     #     center=[0, 5000, 0],
-    #     pitch=r"2 deg",
+    #     pitch=r"30 mrad",
     #     limPhysX=[-10.0, 10.0],
+    #     limPhysY=[-450.0, 450.0],
     #     p=5000,
     #     q=1000)
 
-    beamLine.mirror = roes.EllipticCylindricalMirrorXMF(
+
+
+    # beamLine.Mirror = roes.EllipticCylindricalMirrorXMF(
+    #     bl=beamLine,
+    #     name=None,
+    #     center=[0, 5000, 0],
+    #     pitch=r"30 mrad",
+    #     limPhysX=[-10.0, 10.0],
+    #     limPhysY=[-450.0, 450.0],
+    #     p=5000,
+    #     q=1000)
+    
+    beamLine.Mirror = roes.EllipticCylindricalMirrorPyLost(
         bl=beamLine,
         name=None,
         center=[0, 5000, 0],
-        pitch=30e-3,
+        pitch=r"30 mrad",
         limPhysX=[-10.0, 10.0],
+        limPhysY=[-450.0, 450.0],
         p=5000,
         q=1000)
     
-    # beamLine.mirror = roes.EllipticalMirror(
+    # beamLine.Mirror = roes.EllipticalMirror(
     #     bl=beamLine,
     #     name=None,
     #     center=[0, 5000, 0],
-    #     pitch=30e-3,
+    #     pitch=r"30 mrad",
     #     limPhysX=[-10.0, 10.0],
+    #     limPhysY=[-450.0, 450.0],
     #     p=5000,
     #     q=1000)
-
+    
+    
+    
+    
     beamLine.screen = rscreens.Screen(
         bl=beamLine,
         name=None,
-        center=[0, 5000+1000, 0])
+        center=[0, 5999.8, 0])
+        # center=[0, 5000 + 1000 * np.cos(30e-3), 1000 * np.sin(30e-3)])
 
     return beamLine
 
@@ -78,16 +100,16 @@ def build_beamline():
 def run_process(beamLine):
     geometricSource01beamGlobal01 = beamLine.geometricSource.shine()
 
-    mirror01beamGlobal01, mirror01beamLocal01 = beamLine.mirror.reflect(
+    ellipticalMirrorParam01beamGlobal01, ellipticalMirrorParam01beamLocal01 = beamLine.Mirror.reflect(
         beam=geometricSource01beamGlobal01)
 
     screen01beamLocal01 = beamLine.screen.expose(
-        beam=mirror01beamGlobal01)
+        beam=ellipticalMirrorParam01beamGlobal01)
 
     outDict = {
         'geometricSource01beamGlobal01': geometricSource01beamGlobal01,
-        'mirror01beamGlobal01': mirror01beamGlobal01,
-        'mirror01beamLocal01': mirror01beamLocal01,
+        'ellipticalMirrorParam01beamGlobal01': ellipticalMirrorParam01beamGlobal01,
+        'ellipticalMirrorParam01beamLocal01': ellipticalMirrorParam01beamLocal01,
         'screen01beamLocal01': screen01beamLocal01}
     return outDict
 
@@ -103,10 +125,10 @@ def define_plots():
         beam=r"geometricSource01beamGlobal01",
         xaxis=xrtplot.XYCAxis(
             label=r"x",
-            fwhmFormatStr=r"%.4f"),
+            fwhmFormatStr=r"%.6f"),
         yaxis=xrtplot.XYCAxis(
             label=r"z",
-            fwhmFormatStr=r"%.4f"),
+            fwhmFormatStr=r"%.6f"),
         caxis=xrtplot.XYCAxis(
             label=r"energy",
             unit=r"eV"),
@@ -117,16 +139,28 @@ def define_plots():
         beam=r"screen01beamLocal01",
         xaxis=xrtplot.XYCAxis(
             label=r"x",
-            fwhmFormatStr=r"%.4f"),
+            fwhmFormatStr=r"%.6f"),
         yaxis=xrtplot.XYCAxis(
             label=r"z",
-            fwhmFormatStr=r"%.4f"),
+            fwhmFormatStr=r"%.6f"),
         caxis=xrtplot.XYCAxis(
             label=r"energy",
             unit=r"eV"),
         aspect=r"auto",
         title=r"Focus")
     plots.append(Focus)
+
+    Footprint = xrtplot.XYCPlot(
+        beam=r"ellipticalMirrorParam01beamLocal01",
+        xaxis=xrtplot.XYCAxis(
+            label=r"x"),
+        yaxis=xrtplot.XYCAxis(
+            label=r"y"),
+        caxis=xrtplot.XYCAxis(
+            label=r"energy",
+            unit=r"eV"),
+        title=r"Footprint")
+    plots.append(Footprint)
     return plots
 
 

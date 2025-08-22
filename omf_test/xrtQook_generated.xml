@@ -32,9 +32,9 @@
 			<distz type="param">normal</distz>
 			<dz type="param">0.0212</dz>
 			<distxprime type="param">normal</distxprime>
-			<dxprime type="param">0.00001</dxprime>
+			<dxprime type="param">0.002</dxprime>
 			<distzprime type="param">normal</distzprime>
-			<dzprime type="param">0.00001</dzprime>
+			<dzprime type="param">0.002</dzprime>
 			<distE type="param">lines</distE>
 			<energies type="param">(9000.0,)</energies>
 			<polarization type="param">horizontal</polarization>
@@ -54,12 +54,12 @@
 			</output>
 		</shine>
 	</geometricSource>
-	<ellipticalMirrorParam type="value">
+	<Mirror type="value">
 		<properties type="prop">
 			<bl type="param">beamLine</bl>
 			<name type="param">None</name>
 			<center type="param">[0, 5000, 0]</center>
-			<pitch type="param">2 deg</pitch>
+			<pitch type="param">30 mrad</pitch>
 			<roll type="param">0</roll>
 			<yaw type="param">0</yaw>
 			<positionRoll type="param">0</positionRoll>
@@ -73,7 +73,7 @@
 			<alpha type="param">None</alpha>
 			<limPhysX type="param">[-10.0, 10.0]</limPhysX>
 			<limOptX type="param">None</limOptX>
-			<limPhysY type="param">[-1000.0, 1000.0]</limPhysY>
+			<limPhysY type="param">[-450.0, 450.0]</limPhysY>
 			<limOptY type="param">None</limOptY>
 			<isParametric type="param">False</isParametric>
 			<shape type="param">rect</shape>
@@ -105,7 +105,7 @@
 				<beamLocal type="param">ellipticalMirrorParam01beamLocal01</beamLocal>
 			</output>
 		</reflect>
-	</ellipticalMirrorParam>
+	</Mirror>
 	<screen type="value">
 		<properties type="prop">
 			<bl type="param">beamLine</bl>
@@ -272,6 +272,77 @@
 		<beamC type="param">None</beamC>
 		<useQtWidget type="param">False</useQtWidget>
 	</Focus>
+	<Footprint type="value">
+		<_object type="object">xrt.plotter.XYCPlot</_object>
+		<beam type="param">ellipticalMirrorParam01beamLocal01</beam>
+		<rayFlag type="param">(1,)</rayFlag>
+		<xaxis type="prop">
+			<_object type="object">xrt.plotter.XYCAxis</_object>
+			<label type="param">x</label>
+			<unit type="param">mm</unit>
+			<factor type="param">None</factor>
+			<data type="param">auto</data>
+			<limits type="param">None</limits>
+			<offset type="param">0</offset>
+			<bins type="param">128</bins>
+			<ppb type="param">2</ppb>
+			<density type="param">histogram</density>
+			<invertAxis type="param">False</invertAxis>
+			<outline type="param">0.5</outline>
+			<fwhmFormatStr type="param">%.1f</fwhmFormatStr>
+		</xaxis>
+		<yaxis type="prop">
+			<_object type="object">xrt.plotter.XYCAxis</_object>
+			<label type="param">y</label>
+			<unit type="param">mm</unit>
+			<factor type="param">None</factor>
+			<data type="param">auto</data>
+			<limits type="param">None</limits>
+			<offset type="param">0</offset>
+			<bins type="param">128</bins>
+			<ppb type="param">2</ppb>
+			<density type="param">histogram</density>
+			<invertAxis type="param">False</invertAxis>
+			<outline type="param">0.5</outline>
+			<fwhmFormatStr type="param">%.1f</fwhmFormatStr>
+		</yaxis>
+		<caxis type="prop">
+			<_object type="object">xrt.plotter.XYCAxis</_object>
+			<label type="param">energy</label>
+			<unit type="param">eV</unit>
+			<factor type="param">None</factor>
+			<data type="param">auto</data>
+			<limits type="param">None</limits>
+			<offset type="param">0</offset>
+			<bins type="param">128</bins>
+			<ppb type="param">2</ppb>
+			<density type="param">histogram</density>
+			<invertAxis type="param">False</invertAxis>
+			<outline type="param">0.5</outline>
+			<fwhmFormatStr type="param">%.1f</fwhmFormatStr>
+		</caxis>
+		<aspect type="param">equal</aspect>
+		<xPos type="param">1</xPos>
+		<yPos type="param">1</yPos>
+		<ePos type="param">1</ePos>
+		<title type="param">Footprint</title>
+		<invertColorMap type="param">False</invertColorMap>
+		<negative type="param">False</negative>
+		<fluxKind type="param">total</fluxKind>
+		<fluxUnit type="param">auto</fluxUnit>
+		<fluxFormatStr type="param">auto</fluxFormatStr>
+		<contourLevels type="param">None</contourLevels>
+		<contourColors type="param">None</contourColors>
+		<contourFmt type="param">%.1f</contourFmt>
+		<contourFactor type="param">1.0</contourFactor>
+		<saveName type="param">None</saveName>
+		<persistentName type="param">None</persistentName>
+		<oe type="param">None</oe>
+		<raycingParam type="param">0</raycingParam>
+		<beamState type="param">None</beamState>
+		<beamC type="param">None</beamC>
+		<useQtWidget type="param">False</useQtWidget>
+	</Footprint>
 </plots>
 <run_ray_tracing type="prop">
 	<_object type="object">xrt.runner.run_ray_tracing</_object>

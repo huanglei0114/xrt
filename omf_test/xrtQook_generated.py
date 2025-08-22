@@ -2,7 +2,7 @@
 """
 
 __author__ = "Konstantin Klementiev", "Roman Chernikov"
-__date__ = "2025-08-21"
+__date__ = "2025-08-22"
 
 Created with xrtQook
 
@@ -37,15 +37,16 @@ def build_beamline():
         center=[0, 0, 0],
         dx=0.0212,
         dz=0.0212,
-        dxprime=1e-05,
-        dzprime=1e-05)
+        dxprime=0.002,
+        dzprime=0.002)
 
-    beamLine.ellipticalMirrorParam = roes.EllipticalMirrorParam(
+    beamLine.Mirror = roes.EllipticalMirrorParam(
         bl=beamLine,
         name=None,
         center=[0, 5000, 0],
-        pitch=r"2 deg",
+        pitch=r"30 mrad",
         limPhysX=[-10.0, 10.0],
+        limPhysY=[-450.0, 450.0],
         p=5000)
 
     beamLine.screen = rscreens.Screen(
@@ -59,7 +60,7 @@ def build_beamline():
 def run_process(beamLine):
     geometricSource01beamGlobal01 = beamLine.geometricSource.shine()
 
-    ellipticalMirrorParam01beamGlobal01, ellipticalMirrorParam01beamLocal01 = beamLine.ellipticalMirrorParam.reflect(
+    ellipticalMirrorParam01beamGlobal01, ellipticalMirrorParam01beamLocal01 = beamLine.Mirror.reflect(
         beam=geometricSource01beamGlobal01)
 
     screen01beamLocal01 = beamLine.screen.expose(
@@ -108,6 +109,18 @@ def define_plots():
         aspect=r"auto",
         title=r"Focus")
     plots.append(Focus)
+
+    Footprint = xrtplot.XYCPlot(
+        beam=r"ellipticalMirrorParam01beamLocal01",
+        xaxis=xrtplot.XYCAxis(
+            label=r"x"),
+        yaxis=xrtplot.XYCAxis(
+            label=r"y"),
+        caxis=xrtplot.XYCAxis(
+            label=r"energy",
+            unit=r"eV"),
+        title=r"Footprint")
+    plots.append(Footprint)
     return plots
 
 

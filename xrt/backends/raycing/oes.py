@@ -1431,6 +1431,15 @@ class EllipticalMirror(OE):
            (np.sqrt(1 - ((y+delta_y)/self.ae)**2) * self.ae**2)  # -dz/dy
        c = 1.
        norm = (a**2 + b**2 + 1)**0.5
+
+       print(min(a/norm), max(a/norm))
+       print(min(b/norm), max(b/norm))
+       print(min(c/norm), max(c/norm))
+       print(min(x), max(x))
+       print(min(y), max(y))
+       delta_z = -self.p*np.sin(self.alpha)
+       z = -self.be * np.sqrt(1 - ((y+delta_y)/self.ae)**2) - delta_z
+       print(min(z), max(z))
        return [a/norm, b/norm, c/norm]
 
 
@@ -1496,8 +1505,8 @@ class EllipticalMirror(OE):
 #        norm = np.sqrt(b**2 + 1)
 #        return [a/norm, b/norm, c/norm]
 
-class EllipticCylindricalMirrorXMF(OE):
-   """Implements elliptic cylindrical mirror in XMF.
+class EllipticCylindricalMirrorPyLost(OE):
+   """Implements elliptic cylindrical mirror in PyLost.
    """
 
    cl_plist = ("p", "alpha", "ae", "be", "ce")
@@ -1537,33 +1546,171 @@ class EllipticCylindricalMirrorXMF(OE):
        self.pcorrected = 0
        return kwargs
 
-#    def get_orientation(self):
-#        if self.pcorrected and self.pitch0 != self.pitch:
-#            self.pcorrected = 0
-#        if not self.pcorrected:
-#            self.gamma = np.pi - 2*self.pitch
-#            self.ce = 0.5 * np.sqrt(
-#                self.p**2 + self.q**2 - 2*self.p*self.q * np.cos(self.gamma))
-#            self.ae = 0.5 * (self.p+self.q)
-#            self.be = np.sqrt(self.ae*self.ae - self.ce*self.ce)
-#            self.alpha = np.arccos((4 * self.ce**2 - self.q**2 + self.p**2) /
-#                                   (4*self.ce*self.p))
-#            self.delta = 0.5*np.pi - self.alpha - 0.5*self.gamma
-#            self.pitch = self.pitch - self.delta
-#            self.pitch0 = self.pitch
-#            self.pcorrected = 1
+   def get_orientation(self):
+       if self.pcorrected and self.pitch0 != self.pitch:
+           self.pcorrected = 0
+       if not self.pcorrected:
+           self.gamma = np.pi - 2*self.pitch
+           self.ce = 0.5 * np.sqrt(
+               self.p**2 + self.q**2 - 2*self.p*self.q * np.cos(self.gamma))
+           self.ae = 0.5 * (self.p+self.q)
+           self.be = np.sqrt(self.ae*self.ae - self.ce*self.ce)
+           self.alpha = np.arccos((4 * self.ce**2 - self.q**2 + self.p**2) /
+                                  (4*self.ce*self.p))
+           self.delta = 0.5*np.pi - self.alpha - 0.5*self.gamma
+           self.pitch = self.pitch - self.delta
+           self.pitch0 = self.pitch
+           self.pcorrected = 1
 
    def local_z(self, x, y):
-       z = standard_concave_elliptic_cylinder_height(y*1e-3,self.p*1e-3,self.q*1e-3,self.pitch)
-    #    z = standard_concave_hyperbolic_cylinder_height(y*1e-3,self.p*1e-3,self.q*1e-3,self.pitch)
-       
+        center = 0
+        rotate = 0
+        piston = 0
+        p = self.p*1e-3
+        q = self.q*1e-3
+        theta = self.pitch
+        x1d = y*1e-3
+
+        x1d = x1d  - center
+        a = (p + q) / 2
+        b = np.sqrt(p * q) * np.sin(theta)
+        F = (1 / 2) * np.sqrt(p ** 2 + q ** 2 - 2 * p * q * np.cos(np.pi - (2 * theta)))
+        alpha = np.asin(p / (2 * F) * np.sin(np.pi - (2 * theta)))
+        mu = alpha - theta
+        x0 = F - q * np.cos(alpha)
+        y0 = -b * np.sqrt(1 - (x0 / a) ** 2)
+        
+        z1 = np.cos(mu) * (-np.sqrt((b ** 2) * (1 - ((x1d * np.cos(mu) + x0) / a) ** 2)) - y0)
+        z2 = np.sin(-mu) * x1d * np.cos(mu)
+        z3 = np.cos(mu) * (y0 + np.sqrt((b ** 2) * (1 - (x0 / a) ** 2)))
+        z_pylost = z1 + z2 + z3
+        
+        z = z_pylost*1e3
+        return z
+
+   def local_n(self, x, y):
+        """Determines the normal vector of OE at (x, y) position."""
+        center = 0
+        rotate = 0
+        piston = 0
+        p = self.p*1e-3
+        q = self.q*1e-3
+        theta = self.pitch
+        x1d = y*1e-3
+
+        x1d = x1d  - center
+        a = (p + q) / 2
+        b = np.sqrt(p * q) * np.sin(theta)
+        F = (1 / 2) * np.sqrt(p ** 2 + q ** 2 - 2 * p * q * np.cos(np.pi - (2 * theta)))
+        alpha = np.asin(p / (2 * F) * np.sin(np.pi - (2 * theta)))
+        mu = alpha - theta
+        x0 = F - q * np.cos(alpha)
+        y0 = -b * np.sqrt(1 - (x0 / a) ** 2)
+            
+        z1 = np.cos(mu) * (-np.sqrt((b ** 2) * (1 - ((x1d * np.cos(mu) + x0) / a) ** 2)) - y0)
+        z2 = np.sin(-mu) * x1d * np.cos(mu)
+        z3 = np.cos(mu) * (y0 + np.sqrt((b ** 2) * (1 - (x0 / a) ** 2)))
+        z_pylost = z1 + z2 + z3
+        z = z_pylost*1e3
+        sx_pylost = np.cos(mu) * b * (x1d  * np.cos(mu) + x0) / (np.sqrt(1 - ((x1d * np.cos(mu) + x0) / a) ** 2) * a ** 2) + np.sin(-mu) * np.cos(mu)
+
+        nx = sx_pylost*0
+        ny = -sx_pylost
+        nz = 1.0
+
+        norm = (nx**2 + ny**2 + nz**2)**0.5
+        nx /= norm
+        ny /= norm
+        nz /= norm
+
+        surface_normal = [nx, ny, nz]
+ 
+        print(min(surface_normal[0]), max(surface_normal[0]))
+        print(min(surface_normal[1]), max(surface_normal[1]))
+        print(min(surface_normal[2]), max(surface_normal[2]))
+        print(min(x), max(x))
+        print(min(y), max(y))
+        print(min(z), max(z))
+
+        return surface_normal
+
+
+
+class EllipticCylindricalMirrorXMF(OE):
+   """Implements elliptic cylindrical mirror in XMF.
+   """
+
+   cl_plist = ("p", "alpha", "ae", "be", "ce")
+   cl_local_z = """
+   float local_z(float8 cl_plist, int i, float x, float y)
+   {
+     float delta_y = cl_plist.s0 * cos(cl_plist.s1) - cl_plist.s4;
+     float delta_z = -cl_plist.s0 * sin(cl_plist.s1);
+     return -cl_plist.s3 *
+         sqrt(1 - (pown(((y+delta_y)/cl_plist.s2),2))) - delta_z;
+   }"""
+   cl_local_n = """
+   float3 local_n(float8 cl_plist, int i, float x, float y)
+   {
+     float3 res;
+     float delta_y = cl_plist.s0 * cos(cl_plist.s1) - cl_plist.s4;
+     res.s0 = 0;
+     res.s1 = -cl_plist.s3 * (y+delta_y) /
+         sqrt(1 - (pown((y+delta_y)/cl_plist.s2,2)) / pown(cl_plist.s2,2));
+     res.s2 = 1.;
+     return normalize(res);
+   }"""
+
+   def __init__(self, *args, **kwargs):
+       """
+       *p* and *q*: float
+       *p* and *q* arms of the mirror, both are positive.
+       """
+       kwargs = self.__pop_kwargs(**kwargs)
+       OE.__init__(self, *args, **kwargs)
+       self.get_orientation()
+
+   def __pop_kwargs(self, **kwargs):
+       self.p = kwargs.pop('p')
+       self.q = kwargs.pop('q')
+       self.isCylindrical = kwargs.pop('isCylindrical', True)  # always!
+       self.pcorrected = 0
+       return kwargs
+
+   def get_orientation(self):
+       if self.pcorrected and self.pitch0 != self.pitch:
+           self.pcorrected = 0
+       if not self.pcorrected:
+           self.gamma = np.pi - 2*self.pitch
+           self.ce = 0.5 * np.sqrt(
+               self.p**2 + self.q**2 - 2*self.p*self.q * np.cos(self.gamma))
+           self.ae = 0.5 * (self.p+self.q)
+           self.be = np.sqrt(self.ae*self.ae - self.ce*self.ce)
+           self.alpha = np.arccos((4 * self.ce**2 - self.q**2 + self.p**2) /
+                                  (4*self.ce*self.p))
+           self.delta = 0.5*np.pi - self.alpha - 0.5*self.gamma
+           self.pitch = self.pitch - self.delta
+           self.pitch0 = self.pitch
+           self.pcorrected = 1
+
+   def local_z(self, x, y):
+       x_xmf = y*1e-3
+       p_xmf = self.p*1e-3  
+       q_xmf = self.q*1e-3
+       z_xmf = standard_concave_elliptic_cylinder_height(x_xmf,p_xmf,q_xmf,self.pitch)
+    #    z = standard_concave_hyperbolic_cylinder_height(x_xmf,p_xmf,q_xmf,self.pitch)
+       z = z_xmf*1e3
        return z
 
    def local_n(self, x, y):
         """Determines the normal vector of OE at (x, y) position."""
-        z, surf_normal = standard_concave_elliptic_cylinder_height(y*1e-3,self.p*1e-3,self.q*1e-3,self.pitch, return_surface_normal_as_extra=True)
-        # # z, surf_normal = standard_concave_hyperbolic_cylinder_height(y*1e-3,self.p*1e-3,self.q*1e-3,self.pitch, return_surface_normal_as_extra=True)
+        x_xmf = y*1e-3
+        p_xmf = self.p*1e-3  
+        q_xmf = self.q*1e-3
+        z_xmf, surf_normal = standard_concave_elliptic_cylinder_height(x_xmf,p_xmf,q_xmf,self.pitch, return_surface_normal_as_extra=True)
+        # # z_xmf, surf_normal = standard_concave_hyperbolic_cylinder_height(x_xmf,p_xmf,q_xmf,self.pitch, return_surface_normal_as_extra=True)
 
+        z = z_xmf*1e3
         # surface_normal = []
         # surface_normal.append(-surf_normal[1])
         # surface_normal.append(surf_normal[0])
@@ -1626,7 +1773,7 @@ class EllipsoidalMirrorXMF(OE):
        """
        kwargs = self.__pop_kwargs(**kwargs)
        OE.__init__(self, *args, **kwargs)
-    #    self.get_orientation()
+       self.get_orientation()
 
    def __pop_kwargs(self, **kwargs):
        self.p = kwargs.pop('p')
@@ -1635,33 +1782,43 @@ class EllipsoidalMirrorXMF(OE):
        self.pcorrected = 0
        return kwargs
 
-#    def get_orientation(self):
-#        if self.pcorrected and self.pitch0 != self.pitch:
-#            self.pcorrected = 0
-#        if not self.pcorrected:
-#            self.gamma = np.pi - 2*self.pitch
-#            self.ce = 0.5 * np.sqrt(
-#                self.p**2 + self.q**2 - 2*self.p*self.q * np.cos(self.gamma))
-#            self.ae = 0.5 * (self.p+self.q)
-#            self.be = np.sqrt(self.ae*self.ae - self.ce*self.ce)
-#            self.alpha = np.arccos((4 * self.ce**2 - self.q**2 + self.p**2) /
-#                                   (4*self.ce*self.p))
-#            self.delta = 0.5*np.pi - self.alpha - 0.5*self.gamma
-#            self.pitch = self.pitch - self.delta
-#            self.pitch0 = self.pitch
-#            self.pcorrected = 1
+   def get_orientation(self):
+       if self.pcorrected and self.pitch0 != self.pitch:
+           self.pcorrected = 0
+       if not self.pcorrected:
+           self.gamma = np.pi - 2*self.pitch
+           self.ce = 0.5 * np.sqrt(
+               self.p**2 + self.q**2 - 2*self.p*self.q * np.cos(self.gamma))
+           self.ae = 0.5 * (self.p+self.q)
+           self.be = np.sqrt(self.ae*self.ae - self.ce*self.ce)
+           self.alpha = np.arccos((4 * self.ce**2 - self.q**2 + self.p**2) /
+                                  (4*self.ce*self.p))
+           self.delta = 0.5*np.pi - self.alpha - 0.5*self.gamma
+           self.pitch = self.pitch - self.delta
+           self.pitch0 = self.pitch
+           self.pcorrected = 1
 
    def local_z(self, x, y):
-       z = standard_concave_ellipsoid_height(y*1e-3,-x*1e-3,self.p*1e-3,self.q*1e-3, self.pitch)
+       x_xmf = y*1e-3
+       y_xmf = -x*1e-3
+       p_xmf = self.p*1e-3
+       q_xmf = self.q*1e-3
+       z_xmf = standard_concave_ellipsoid_height(x_xmf,y_xmf,p_xmf,q_xmf, self.pitch)
+       z = z_xmf*1e3
        return z
 
    def local_n(self, x, y):
         """Determines the normal vector of OE at (x, y) position."""
-        z, surf_normal = standard_concave_ellipsoid_height(y*1e-3,-x*1e-3,self.p*1e-3,self.q*1e-3, self.pitch, return_surface_normal_as_extra=True)
+        x_xmf = y*1e-3
+        y_xmf = -x*1e-3
+        p_xmf = self.p*1e-3
+        q_xmf = self.q*1e-3
+        z_xmf, surf_normal_xmf = standard_concave_ellipsoid_height(x_xmf,y_xmf,p_xmf,q_xmf, self.pitch, return_surface_normal_as_extra=True)
+        z = z_xmf*1e3
         surface_normal = []
-        surface_normal.append(-surf_normal[1])
-        surface_normal.append(surf_normal[0])
-        surface_normal.append(surf_normal[2])
+        surface_normal.append(-surf_normal_xmf[1])
+        surface_normal.append(surf_normal_xmf[0])
+        surface_normal.append(surf_normal_xmf[2])
 
         print(min(surface_normal[0]), max(surface_normal[0]))
         print(min(surface_normal[1]), max(surface_normal[1]))
