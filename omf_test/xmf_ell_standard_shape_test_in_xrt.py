@@ -1,19 +1,11 @@
 # -*- coding: utf-8 -*-
 """
 
-__author__ = "Konstantin Klementiev", "Roman Chernikov"
-__date__ = "2025-08-22"
-
-Created with xrtQook
-
-
-
-
 """
 
 import numpy as np
 import sys
-sys.path.append(r"/Users/lhuang/Documents/GitHub/xrt")
+sys.path.append(r"D:\GitHub\xrt")
 import xrt.backends.raycing.sources as rsources
 import xrt.backends.raycing.screens as rscreens
 import xrt.backends.raycing.materials as rmats
@@ -40,19 +32,68 @@ def build_beamline():
         dxprime=0.002,
         dzprime=0.002)
 
-    beamLine.mirror = roes.EllipticalMirrorParam(
+   
+    # beamLine.mirror = roes.EllipticalMirrorParam(
+    #     bl=beamLine,
+    #     name=None,
+    #     center=[0, 5000, 0],
+    #     pitch=r"30 mrad",
+    #     limPhysX=[-10.0, 10.0],
+    #     limPhysY=[-50.0, 50.0],
+    #     p=5000,
+    #     q=1000)
+    
+    beamLine.mirror = roes.EllipsoidalMirrorXMF(
         bl=beamLine,
         name=None,
         center=[0, 5000, 0],
         pitch=r"30 mrad",
         limPhysX=[-10.0, 10.0],
         limPhysY=[-500.0, 500.0],
-        p=5000)
+        p=5000,
+        q=1000)
 
+
+
+    # beamLine.mirror = roes.EllipticCylindricalMirrorXMF(
+    #     bl=beamLine,
+    #     name=None,
+    #     center=[0, 5000, 0],
+    #     pitch=r"30 mrad",
+    #     limPhysX=[-10.0, 10.0],
+    #     limPhysY=[-500.0, 500.0],
+    #     p=5000,
+    #     q=1000)
+    
+    # beamLine.mirror = roes.EllipticCylindricalMirrorPyLost(
+    #     bl=beamLine,
+    #     name=None,
+    #     center=[0, 5000, 0],
+    #     pitch=r"30 mrad",
+    #     limPhysX=[-10.0, 10.0],
+    #     limPhysY=[-500.0, 500.0],
+    #     p=5000,
+    #     q=1000)
+    
+    # beamLine.mirror = roes.EllipticalMirror(
+    #     bl=beamLine,
+    #     name=None,
+    #     center=[0, 5000, 0],
+    #     pitch=r"30 mrad",
+    #     limPhysX=[-10.0, 10.0],
+    #     limPhysY=[-500.0, 500.0],
+    #     p=5000,
+    #     q=1000)
+    
+    
+    
+    
     beamLine.screen = rscreens.Screen(
         bl=beamLine,
         name=None,
-        center=[0, 6000, 0])
+        # center=[0, 6000, 0])
+        center=[0, 5999.8, 0])
+        # center=[0, 5000 + 1000 * np.cos(30e-3), 1000 * np.sin(30e-3)])
 
     return beamLine
 
@@ -113,11 +154,9 @@ def define_plots():
     Footprint = xrtplot.XYCPlot(
         beam=r"ellipticalMirrorParam01beamLocal01",
         xaxis=xrtplot.XYCAxis(
-            label=r"x",
-            fwhmFormatStr=r"%.6f"),
+            label=r"x"),
         yaxis=xrtplot.XYCAxis(
-            label=r"y",
-            fwhmFormatStr=r"%.6f"),
+            label=r"y"),
         caxis=xrtplot.XYCAxis(
             label=r"energy",
             unit=r"eV"),

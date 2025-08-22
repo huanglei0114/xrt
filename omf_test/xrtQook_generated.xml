@@ -73,7 +73,7 @@
 			<alpha type="param">None</alpha>
 			<limPhysX type="param">[-10.0, 10.0]</limPhysX>
 			<limOptX type="param">None</limOptX>
-			<limPhysY type="param">[-450.0, 450.0]</limPhysY>
+			<limPhysY type="param">[-500.0, 500.0]</limPhysY>
 			<limOptY type="param">None</limOptY>
 			<isParametric type="param">False</isParametric>
 			<shape type="param">rect</shape>
@@ -147,7 +147,7 @@
 			<density type="param">histogram</density>
 			<invertAxis type="param">False</invertAxis>
 			<outline type="param">0.5</outline>
-			<fwhmFormatStr type="param">%.4f</fwhmFormatStr>
+			<fwhmFormatStr type="param">%.6f</fwhmFormatStr>
 		</xaxis>
 		<yaxis type="prop">
 			<_object type="object">xrt.plotter.XYCAxis</_object>
@@ -162,7 +162,7 @@
 			<density type="param">histogram</density>
 			<invertAxis type="param">False</invertAxis>
 			<outline type="param">0.5</outline>
-			<fwhmFormatStr type="param">%.4f</fwhmFormatStr>
+			<fwhmFormatStr type="param">%.6f</fwhmFormatStr>
 		</yaxis>
 		<caxis type="prop">
 			<_object type="object">xrt.plotter.XYCAxis</_object>
@@ -218,7 +218,7 @@
 			<density type="param">histogram</density>
 			<invertAxis type="param">False</invertAxis>
 			<outline type="param">0.5</outline>
-			<fwhmFormatStr type="param">%.4f</fwhmFormatStr>
+			<fwhmFormatStr type="param">%.6f</fwhmFormatStr>
 		</xaxis>
 		<yaxis type="prop">
 			<_object type="object">xrt.plotter.XYCAxis</_object>
@@ -233,7 +233,7 @@
 			<density type="param">histogram</density>
 			<invertAxis type="param">False</invertAxis>
 			<outline type="param">0.5</outline>
-			<fwhmFormatStr type="param">%.4f</fwhmFormatStr>
+			<fwhmFormatStr type="param">%.6f</fwhmFormatStr>
 		</yaxis>
 		<caxis type="prop">
 			<_object type="object">xrt.plotter.XYCAxis</_object>
@@ -289,7 +289,7 @@
 			<density type="param">histogram</density>
 			<invertAxis type="param">False</invertAxis>
 			<outline type="param">0.5</outline>
-			<fwhmFormatStr type="param">%.1f</fwhmFormatStr>
+			<fwhmFormatStr type="param">%.6f</fwhmFormatStr>
 		</xaxis>
 		<yaxis type="prop">
 			<_object type="object">xrt.plotter.XYCAxis</_object>
@@ -304,7 +304,7 @@
 			<density type="param">histogram</density>
 			<invertAxis type="param">False</invertAxis>
 			<outline type="param">0.5</outline>
-			<fwhmFormatStr type="param">%.1f</fwhmFormatStr>
+			<fwhmFormatStr type="param">%.6f</fwhmFormatStr>
 		</yaxis>
 		<caxis type="prop">
 			<_object type="object">xrt.plotter.XYCAxis</_object>

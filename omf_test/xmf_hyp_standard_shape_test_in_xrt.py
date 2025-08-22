@@ -38,7 +38,7 @@ def build_beamline():
         center=[0, 5000, 0],
         pitch=r"30 mrad",
         limPhysX=[-10.0, 10.0],
-        limPhysY=[-450.0, 450.0],
+        limPhysY=[-500.0, 500.0],
         p=5000,
         q=1000)
 
