@@ -32,18 +32,7 @@ def build_beamline():
         dxprime=0.002,
         dzprime=0.002)
 
-   
-    # beamLine.mirror = roes.EllipticalMirrorParam(
-    #     bl=beamLine,
-    #     name=None,
-    #     center=[0, 5000, 0],
-    #     pitch=r"30 mrad",
-    #     limPhysX=[-10.0, 10.0],
-    #     limPhysY=[-50.0, 50.0],
-    #     p=5000,
-    #     q=1000)
-    
-    beamLine.mirror = roes.EllipsoidalMirrorXMF(
+    beamLine.hyp_mirror = roes.ConvexHyperbolicCylindricalMirrorXMF(
         bl=beamLine,
         name=None,
         center=[0, 5000, 0],
@@ -54,46 +43,10 @@ def build_beamline():
         q=1000)
 
 
-
-    # beamLine.mirror = roes.EllipticCylindricalMirrorXMF(
-    #     bl=beamLine,
-    #     name=None,
-    #     center=[0, 5000, 0],
-    #     pitch=r"30 mrad",
-    #     limPhysX=[-10.0, 10.0],
-    #     limPhysY=[-450.0, 450.0],
-    #     p=5000,
-    #     q=1000)
-    
-    # beamLine.mirror = roes.EllipticCylindricalMirrorPyLost(
-    #     bl=beamLine,
-    #     name=None,
-    #     center=[0, 5000, 0],
-    #     pitch=r"30 mrad",
-    #     limPhysX=[-10.0, 10.0],
-    #     limPhysY=[-450.0, 450.0],
-    #     p=5000,
-    #     q=1000)
-    
-    # beamLine.mirror = roes.EllipticalMirror(
-    #     bl=beamLine,
-    #     name=None,
-    #     center=[0, 5000, 0],
-    #     pitch=r"30 mrad",
-    #     limPhysX=[-10.0, 10.0],
-    #     limPhysY=[-450.0, 450.0],
-    #     p=5000,
-    #     q=1000)
-    
-    
-    
-    
     beamLine.screen = rscreens.Screen(
         bl=beamLine,
         name=None,
-        center=[0, 6000, 0])
-        # center=[0, 5999.8, 0])
-        # center=[0, 5000 + 1000 * np.cos(30e-3), 1000 * np.sin(30e-3)])
+        center=[0, 4000+0.2, 0])
 
     return beamLine
 
@@ -101,16 +54,19 @@ def build_beamline():
 def run_process(beamLine):
     geometricSource01beamGlobal01 = beamLine.geometricSource.shine()
 
-    ellipticalMirrorParam01beamGlobal01, ellipticalMirrorParam01beamLocal01 = beamLine.mirror.reflect(
+    # ellipticalMirrorParam01beamGlobal01, ellipticalMirrorParam01beamLocal01 = beamLine.ell_mirror.reflect(
+    #     beam=geometricSource01beamGlobal01)
+    
+    hyperMirror01beamGlobal01, hyperMirror01beamLocal01 = beamLine.hyp_mirror.reflect(
         beam=geometricSource01beamGlobal01)
 
     screen01beamLocal01 = beamLine.screen.expose(
-        beam=ellipticalMirrorParam01beamGlobal01)
+        beam=hyperMirror01beamGlobal01)
 
     outDict = {
         'geometricSource01beamGlobal01': geometricSource01beamGlobal01,
-        'ellipticalMirrorParam01beamGlobal01': ellipticalMirrorParam01beamGlobal01,
-        'ellipticalMirrorParam01beamLocal01': ellipticalMirrorParam01beamLocal01,
+        'hyperMirror01beamGlobal01': hyperMirror01beamGlobal01,
+        'hyperMirror01beamLocal01': hyperMirror01beamLocal01,
         'screen01beamLocal01': screen01beamLocal01}
     return outDict
 
@@ -152,7 +108,7 @@ def define_plots():
     plots.append(Focus)
 
     Footprint = xrtplot.XYCPlot(
-        beam=r"ellipticalMirrorParam01beamLocal01",
+        beam=r"hyperMirror01beamLocal01",
         xaxis=xrtplot.XYCAxis(
             label=r"x"),
         yaxis=xrtplot.XYCAxis(

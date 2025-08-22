@@ -35,12 +35,12 @@ def build_beamline():
         bl=beamLine,
         name=None,
         center=[0, 0, 0],
-        dx=0.0212,
-        dz=0.0212,
+        dx=0.000212,
+        dz=0.000212,
         dxprime=0.002,
         dzprime=0.002)
 
-    beamLine.Mirror = roes.EllipticalMirrorParam(
+    beamLine.mirror = roes.EllipticalMirrorParam(
         bl=beamLine,
         name=None,
         center=[0, 5000, 0],
@@ -60,7 +60,7 @@ def build_beamline():
 def run_process(beamLine):
     geometricSource01beamGlobal01 = beamLine.geometricSource.shine()
 
-    ellipticalMirrorParam01beamGlobal01, ellipticalMirrorParam01beamLocal01 = beamLine.Mirror.reflect(
+    ellipticalMirrorParam01beamGlobal01, ellipticalMirrorParam01beamLocal01 = beamLine.mirror.reflect(
         beam=geometricSource01beamGlobal01)
 
     screen01beamLocal01 = beamLine.screen.expose(
@@ -85,29 +85,31 @@ def define_plots():
         beam=r"geometricSource01beamGlobal01",
         xaxis=xrtplot.XYCAxis(
             label=r"x",
-            fwhmFormatStr=r"%.4f"),
+            fwhmFormatStr=r"%.6f"),
         yaxis=xrtplot.XYCAxis(
             label=r"z",
-            fwhmFormatStr=r"%.4f"),
+            fwhmFormatStr=r"%.6f"),
         caxis=xrtplot.XYCAxis(
             label=r"energy",
             unit=r"eV"),
-        title=r"Source")
+        title=r"Source",
+        contourFmt=r"%.6f")
     plots.append(Source)
 
     Focus = xrtplot.XYCPlot(
         beam=r"screen01beamLocal01",
         xaxis=xrtplot.XYCAxis(
             label=r"x",
-            fwhmFormatStr=r"%.4f"),
+            fwhmFormatStr=r"%.6f"),
         yaxis=xrtplot.XYCAxis(
             label=r"z",
-            fwhmFormatStr=r"%.4f"),
+            fwhmFormatStr=r"%.6f"),
         caxis=xrtplot.XYCAxis(
             label=r"energy",
             unit=r"eV"),
         aspect=r"auto",
-        title=r"Focus")
+        title=r"Focus",
+        contourFmt=r"%.6f")
     plots.append(Focus)
 
     Footprint = xrtplot.XYCPlot(
@@ -119,7 +121,8 @@ def define_plots():
         caxis=xrtplot.XYCAxis(
             label=r"energy",
             unit=r"eV"),
-        title=r"Footprint")
+        title=r"Footprint",
+        contourFmt=r"%.6f")
     plots.append(Footprint)
     return plots
 

@@ -1537,7 +1537,7 @@ class EllipticCylindricalMirrorPyLost(OE):
        """
        kwargs = self.__pop_kwargs(**kwargs)
        OE.__init__(self, *args, **kwargs)
-    #    self.get_orientation()
+       self.get_orientation()
 
    def __pop_kwargs(self, **kwargs):
        self.p = kwargs.pop('p')
@@ -1635,6 +1635,172 @@ class EllipticCylindricalMirrorPyLost(OE):
         return surface_normal
 
 
+class ConvexHyperbolicCylindricalMirrorXMF(OE):
+   """Implements convex hyperbolic cylindrical mirror in XMF.
+   """
+
+   cl_plist = ("p", "alpha", "ae", "be", "ce")
+   cl_local_z = """
+   float local_z(float8 cl_plist, int i, float x, float y)
+   {
+     float delta_y = cl_plist.s0 * cos(cl_plist.s1) - cl_plist.s4;
+     float delta_z = -cl_plist.s0 * sin(cl_plist.s1);
+     return -cl_plist.s3 *
+         sqrt(1 - (pown(((y+delta_y)/cl_plist.s2),2))) - delta_z;
+   }"""
+   cl_local_n = """
+   float3 local_n(float8 cl_plist, int i, float x, float y)
+   {
+     float3 res;
+     float delta_y = cl_plist.s0 * cos(cl_plist.s1) - cl_plist.s4;
+     res.s0 = 0;
+     res.s1 = -cl_plist.s3 * (y+delta_y) /
+         sqrt(1 - (pown((y+delta_y)/cl_plist.s2,2)) / pown(cl_plist.s2,2));
+     res.s2 = 1.;
+     return normalize(res);
+   }"""
+
+   def __init__(self, *args, **kwargs):
+       """
+       *p* and *q*: float
+       *p* and *q* arms of the mirror, both are positive.
+       """
+       kwargs = self.__pop_kwargs(**kwargs)
+       OE.__init__(self, *args, **kwargs)
+       self.get_orientation()
+
+   def __pop_kwargs(self, **kwargs):
+       self.p = kwargs.pop('p')
+       self.q = kwargs.pop('q')
+       self.isCylindrical = kwargs.pop('isCylindrical', True)  # always!
+       self.pcorrected = 0
+       return kwargs
+
+   def get_orientation(self):
+       if self.pcorrected and self.pitch0 != self.pitch:
+           self.pcorrected = 0
+       if not self.pcorrected:
+           self.gamma = np.pi - 2*self.pitch
+           self.ce = 0.5 * np.sqrt(
+               self.p**2 + self.q**2 - 2*self.p*self.q * np.cos(self.gamma))
+           self.ae = 0.5 * (self.p+self.q)
+           self.be = np.sqrt(self.ae*self.ae - self.ce*self.ce)
+           self.alpha = np.arccos((4 * self.ce**2 - self.q**2 + self.p**2) /
+                                  (4*self.ce*self.p))
+           self.delta = 0.5*np.pi - self.alpha - 0.5*self.gamma
+           self.pitch = self.pitch - self.delta
+           self.pitch0 = self.pitch
+           self.pcorrected = 1
+
+   def local_z(self, x, y):
+       x_xmf = y*1e-3
+       p_xmf = self.p*1e-3  
+       q_xmf = self.q*1e-3
+       z_xmf = standard_convex_hyperbolic_cylinder_height(x_xmf,p_xmf,q_xmf,self.pitch)
+       z = z_xmf*1e3
+       return z
+
+   def local_n(self, x, y):
+        """Determines the normal vector of OE at (x, y) position."""
+        x_xmf = y*1e-3
+        p_xmf = self.p*1e-3  
+        q_xmf = self.q*1e-3
+        z_xmf, surf_normal_xmf = standard_convex_hyperbolic_cylinder_height(x_xmf,p_xmf,q_xmf,self.pitch, return_surface_normal_as_extra=True)
+        z = z_xmf*1e3
+        surface_normal = [-surf_normal_xmf[1], surf_normal_xmf[0], surf_normal_xmf[2]]
+ 
+        print(min(surface_normal[0]), max(surface_normal[0]))
+        print(min(surface_normal[1]), max(surface_normal[1]))
+        print(min(surface_normal[2]), max(surface_normal[2]))
+        print(min(x), max(x))
+        print(min(y), max(y))
+        print(min(z), max(z))
+
+        return surface_normal
+
+class ConcaveHyperbolicCylindricalMirrorXMF(OE):
+   """Implements concave hyperbolic cylindrical mirror in XMF.
+   """
+
+   cl_plist = ("p", "alpha", "ae", "be", "ce")
+   cl_local_z = """
+   float local_z(float8 cl_plist, int i, float x, float y)
+   {
+     float delta_y = cl_plist.s0 * cos(cl_plist.s1) - cl_plist.s4;
+     float delta_z = -cl_plist.s0 * sin(cl_plist.s1);
+     return -cl_plist.s3 *
+         sqrt(1 - (pown(((y+delta_y)/cl_plist.s2),2))) - delta_z;
+   }"""
+   cl_local_n = """
+   float3 local_n(float8 cl_plist, int i, float x, float y)
+   {
+     float3 res;
+     float delta_y = cl_plist.s0 * cos(cl_plist.s1) - cl_plist.s4;
+     res.s0 = 0;
+     res.s1 = -cl_plist.s3 * (y+delta_y) /
+         sqrt(1 - (pown((y+delta_y)/cl_plist.s2,2)) / pown(cl_plist.s2,2));
+     res.s2 = 1.;
+     return normalize(res);
+   }"""
+
+   def __init__(self, *args, **kwargs):
+       """
+       *p* and *q*: float
+       *p* and *q* arms of the mirror, both are positive.
+       """
+       kwargs = self.__pop_kwargs(**kwargs)
+       OE.__init__(self, *args, **kwargs)
+       self.get_orientation()
+
+   def __pop_kwargs(self, **kwargs):
+       self.p = kwargs.pop('p')
+       self.q = kwargs.pop('q')
+       self.isCylindrical = kwargs.pop('isCylindrical', True)  # always!
+       self.pcorrected = 0
+       return kwargs
+
+   def get_orientation(self):
+       if self.pcorrected and self.pitch0 != self.pitch:
+           self.pcorrected = 0
+       if not self.pcorrected:
+           self.gamma = np.pi - 2*self.pitch
+           self.ce = 0.5 * np.sqrt(
+               self.p**2 + self.q**2 - 2*self.p*self.q * np.cos(self.gamma))
+           self.ae = 0.5 * (self.p+self.q)
+           self.be = np.sqrt(self.ae*self.ae - self.ce*self.ce)
+           self.alpha = np.arccos((4 * self.ce**2 - self.q**2 + self.p**2) /
+                                  (4*self.ce*self.p))
+           self.delta = 0.5*np.pi - self.alpha - 0.5*self.gamma
+           self.pitch = self.pitch - self.delta
+           self.pitch0 = self.pitch
+           self.pcorrected = 1
+
+   def local_z(self, x, y):
+       x_xmf = y*1e-3
+       p_xmf = self.p*1e-3  
+       q_xmf = self.q*1e-3
+       z_xmf = standard_concave_hyperbolic_cylinder_height(x_xmf,p_xmf,q_xmf,self.pitch)
+       z = z_xmf*1e3
+       return z
+
+   def local_n(self, x, y):
+        """Determines the normal vector of OE at (x, y) position."""
+        x_xmf = y*1e-3
+        p_xmf = self.p*1e-3  
+        q_xmf = self.q*1e-3
+        z_xmf, surf_normal_xmf = standard_concave_hyperbolic_cylinder_height(x_xmf,p_xmf,q_xmf,self.pitch, return_surface_normal_as_extra=True)
+        z = z_xmf*1e3
+        surface_normal = [-surf_normal_xmf[1], surf_normal_xmf[0], surf_normal_xmf[2]]
+ 
+        print(min(surface_normal[0]), max(surface_normal[0]))
+        print(min(surface_normal[1]), max(surface_normal[1]))
+        print(min(surface_normal[2]), max(surface_normal[2]))
+        print(min(x), max(x))
+        print(min(y), max(y))
+        print(min(z), max(z))
+
+        return surface_normal
+
 
 class EllipticCylindricalMirrorXMF(OE):
    """Implements elliptic cylindrical mirror in XMF.
@@ -1698,7 +1864,6 @@ class EllipticCylindricalMirrorXMF(OE):
        p_xmf = self.p*1e-3  
        q_xmf = self.q*1e-3
        z_xmf = standard_concave_elliptic_cylinder_height(x_xmf,p_xmf,q_xmf,self.pitch)
-    #    z = standard_concave_hyperbolic_cylinder_height(x_xmf,p_xmf,q_xmf,self.pitch)
        z = z_xmf*1e3
        return z
 
@@ -1707,28 +1872,9 @@ class EllipticCylindricalMirrorXMF(OE):
         x_xmf = y*1e-3
         p_xmf = self.p*1e-3  
         q_xmf = self.q*1e-3
-        z_xmf, surf_normal = standard_concave_elliptic_cylinder_height(x_xmf,p_xmf,q_xmf,self.pitch, return_surface_normal_as_extra=True)
-        # # z_xmf, surf_normal = standard_concave_hyperbolic_cylinder_height(x_xmf,p_xmf,q_xmf,self.pitch, return_surface_normal_as_extra=True)
-
+        z_xmf, surf_normal_xmf = standard_concave_elliptic_cylinder_height(x_xmf,p_xmf,q_xmf,self.pitch, return_surface_normal_as_extra=True)
         z = z_xmf*1e3
-        # surface_normal = []
-        # surface_normal.append(-surf_normal[1])
-        # surface_normal.append(surf_normal[0])
-        # surface_normal.append(surf_normal[2])
-
-
-        sx_xmf = standard_concave_elliptic_cylinder_xslope(y*1e-3,self.p*1e-3,self.q*1e-3,self.pitch)
-
-        nx = sx_xmf*0
-        ny = -sx_xmf
-        nz = 1.0
-
-        norm = (nx**2 + ny**2 + nz**2)**0.5
-        nx /= norm
-        ny /= norm
-        nz /= norm
-
-        surface_normal = [nx, ny, nz]
+        surface_normal = [-surf_normal_xmf[1], surf_normal_xmf[0], surf_normal_xmf[2]]
  
         print(min(surface_normal[0]), max(surface_normal[0]))
         print(min(surface_normal[1]), max(surface_normal[1]))
@@ -1815,10 +1961,7 @@ class EllipsoidalMirrorXMF(OE):
         q_xmf = self.q*1e-3
         z_xmf, surf_normal_xmf = standard_concave_ellipsoid_height(x_xmf,y_xmf,p_xmf,q_xmf, self.pitch, return_surface_normal_as_extra=True)
         z = z_xmf*1e3
-        surface_normal = []
-        surface_normal.append(-surf_normal_xmf[1])
-        surface_normal.append(surf_normal_xmf[0])
-        surface_normal.append(surf_normal_xmf[2])
+        surface_normal = [-surf_normal_xmf[1], surf_normal_xmf[0], surf_normal_xmf[2]]
 
         print(min(surface_normal[0]), max(surface_normal[0]))
         print(min(surface_normal[1]), max(surface_normal[1]))
@@ -4759,6 +4902,88 @@ def standard_concave_hyperbolic_cylinder_height(x: np.ndarray,
     return standard_quadric_cylinder_height(x, p, q, theta, return_z_expression_as_extra, return_surface_normal_as_extra)
 
 
+def standard_convex_hyperbolic_cylinder_height(x: np.ndarray,
+                                               abs_p: float,
+                                               abs_q: float,
+                                               theta: float,
+                                               return_z_expression_as_extra: bool = False,
+                                               return_surface_normal_as_extra: bool = False):
+    """
+    The standard 2D convex hyperbolic height with (``abs_p``, ``abs_q``, ``theta``)
+
+    Parameters
+    ----------
+        x: `numpy.ndarray`
+            The 2D x coordinates
+        abs_p: `float`
+            The ``abs_p`` value: the absolute value of the distance between the source and the chief ray intersection
+        abs_q: `float`
+            The ``abs_q`` value: the absolute value of the distance between the chief ray intersection and the focus
+        theta: `float`
+            The grazing angle
+        return_z_expression_as_extra: `bool`
+            If True, return the z_expression as well
+    Returns
+    -------
+        z2d: `numpy.ndarray`
+            The 2D height map
+    """
+    if abs(abs_p) > abs(abs_q):
+        p = abs_p
+        q = - abs_q
+    else:
+        p = - abs_p
+        q = abs_q
+
+    return standard_quadric_cylinder_height(x, p, q, theta, return_z_expression_as_extra, return_surface_normal_as_extra)
+
+def standard_concave_hyperbolic_cylinder_height(x: np.ndarray,
+                                                abs_p: float,
+                                                abs_q: float,
+                                                theta: float,
+                                                return_z_expression_as_extra: bool = False,
+                                                return_surface_normal_as_extra: bool = False):
+
+    """
+    The standard 2D concave hyperbolic height with (``abs_p``, ``abs_q``, ``theta``)
+
+    Parameters
+    ----------
+        x: `numpy.ndarray`
+            The 2D x coordinates
+        abs_p: `float`
+            The ``abs_p`` value: the absolute value of the distance between the source and the chief ray intersection
+        abs_q: `float`
+            The ``abs_q`` value: the absolute value of the distance between the chief ray intersection and the focus
+        theta: `float`
+            The grazing angle
+        return_z_expression_as_extra: `bool`
+            If True, return the z_expression as well
+    Returns
+    -------
+        z2d: `numpy.ndarray`
+            The 2D height map
+    """
+    if abs(abs_p) > abs(abs_q):
+        p = - abs_p
+        q = abs_q
+    else:
+        p = abs_p
+        q = - abs_q
+
+    return standard_quadric_cylinder_height(x, p, q, theta, return_z_expression_as_extra, return_surface_normal_as_extra)
+
+
+
+
+
+
+
+
+
+
+
+
 def standard_quadric_cylinder_xslope(x: np.ndarray,
                               p: float,
                               q: float,
@@ -4820,3 +5045,5 @@ def standard_concave_elliptic_cylinder_xslope(x: np.ndarray,
     
     sx_expression_quadrics = standard_quadric_cylinder_xslope(x, p, q, theta)
     return sx_expression_quadrics
+
+

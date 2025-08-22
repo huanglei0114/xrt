@@ -26,11 +26,11 @@
 			<yaw type="param">0</yaw>
 			<nrays type="param">100000</nrays>
 			<distx type="param">normal</distx>
-			<dx type="param">0.0212</dx>
+			<dx type="param">0.000212</dx>
 			<disty type="param">None</disty>
 			<dy type="param">0</dy>
 			<distz type="param">normal</distz>
-			<dz type="param">0.0212</dz>
+			<dz type="param">0.000212</dz>
 			<distxprime type="param">normal</distxprime>
 			<dxprime type="param">0.002</dxprime>
 			<distzprime type="param">normal</distzprime>
@@ -54,7 +54,7 @@
 			</output>
 		</shine>
 	</geometricSource>
-	<Mirror type="value">
+	<mirror type="value">
 		<properties type="prop">
 			<bl type="param">beamLine</bl>
 			<name type="param">None</name>
@@ -105,7 +105,7 @@
 				<beamLocal type="param">ellipticalMirrorParam01beamLocal01</beamLocal>
 			</output>
 		</reflect>
-	</Mirror>
+	</mirror>
 	<screen type="value">
 		<properties type="prop">
 			<bl type="param">beamLine</bl>
