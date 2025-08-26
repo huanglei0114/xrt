@@ -1,20 +1,8 @@
 # -*- coding: utf-8 -*-
-"""
-
-__author__ = "Konstantin Klementiev", "Roman Chernikov"
-__date__ = "2025-08-22"
-
-Created with xrtQook
-
-
-
-
-"""
 
 import numpy as np
 import sys
 sys.path.append(r"/Users/lhuang/Documents/GitHub/xrt")
-#sys.path.append(r"C:\xrt_dev\xrt-1.6.0")
 import xrt.backends.raycing.sources as rsources
 import xrt.backends.raycing.screens as rscreens
 import xrt.backends.raycing.materials as rmats
@@ -28,15 +16,14 @@ import xrt.backends.raycing as raycing
 import xrt.plotter as xrtplot
 import xrt.runner as xrtrun
 
-m1_pitch = 30e-3
-em_p = 5000
-em_q = 1000
+m1_theta = 30e-3
+m1_p = 5000
+m1_q = 1000
+source_y = - m1_p * np.cos(m1_theta)
+source_z = m1_p * np.sin(m1_theta)
 
-src_y = -em_p * np.cos(m1_pitch)
-src_z = em_p * np.sin(m1_pitch)
-
-scr_y = em_q * np.cos(m1_pitch)
-scr_z = em_q * np.sin(m1_pitch)
+scr_y = m1_q * np.cos(m1_theta)
+scr_z = m1_q * np.sin(m1_theta)
 
 src_dx = 212e-6
 src_dz = 212e-6
@@ -44,45 +31,38 @@ src_dz = 212e-6
 src_dxprime = 2e-3
 src_dzprime = 2e-3
 
-#print(f"SCR center: [0.000, {em_p+scr_y:.3f}, {scr_z:.3f}]" )
-
-
 def build_beamline():
     beamLine = raycing.BeamLine()
 
     beamLine.geometricSource = rsources.GeometricSource(
         bl=beamLine,
         name="GS",
-        center=[0, src_y, src_z],
-        pitch=-m1_pitch,
+        center=[0, source_y, source_z],
+        pitch=-m1_theta,
         dx=src_dx,
         dz=src_dz,
         dxprime=src_dxprime,
         dzprime=src_dzprime)
-
-    beamLine.mirror = roes.EllipticalMirrorParam(
+    
+    beamLine.mirror_xmf = roes.TanColDiaboloidalMirrorXMF(
         bl=beamLine,
-        name="EM",
+        name=None,
         center=[0, 0, 0],
-#        pitch=0,
-        pitch=m1_pitch,
-        extraPitch=-m1_pitch,
-#        limPhysX=[-50.0, 50.0],
-#        limPhysY=[-1200.0, 1200.0],
+        pitch=m1_theta,
+        extraPitch=-m1_theta,
         limPhysX=[-10.0, 10.0],
         limPhysY=[-500.0, 500.0],
-#        f1=[0, src_y, src_z],
-#        f2=[0, scr_y, scr_z]
-
-        p=em_p,
-        q=em_q
+        p=m1_p,
+        q=m1_q
         )
     
-    
+    beamLine.mirror = beamLine.mirror_xmf
+
     beamLine.screen = rscreens.Screen(
         bl=beamLine,
         name="SCR",
-        center=[0, scr_y, scr_z])
+        center=[0, scr_y, scr_z],
+        z=[0, -np.sin(m1_theta), np.cos(m1_theta)])
 
     return beamLine
 
@@ -90,16 +70,16 @@ def build_beamline():
 def run_process(beamLine):
     geometricSource01beamGlobal01 = beamLine.geometricSource.shine()
 
-    ellipticalMirrorParam01beamGlobal01, ellipticalMirrorParam01beamLocal01 = beamLine.mirror.reflect(
+    M1Param01beamGlobal01, M1Param01beamLocal01 = beamLine.mirror.reflect(
         beam=geometricSource01beamGlobal01)
 
     screen01beamLocal01 = beamLine.screen.expose(
-        beam=ellipticalMirrorParam01beamGlobal01)
+        beam=M1Param01beamGlobal01)
 
     outDict = {
         'geometricSource01beamGlobal01': geometricSource01beamGlobal01,
-        'ellipticalMirrorParam01beamGlobal01': ellipticalMirrorParam01beamGlobal01,
-        'ellipticalMirrorParam01beamLocal01': ellipticalMirrorParam01beamLocal01,
+        'M1Param01beamGlobal01': M1Param01beamGlobal01,
+        'M1Param01beamLocal01': M1Param01beamLocal01,
         'screen01beamLocal01': screen01beamLocal01}
     beamLine.prepare_flow()
     return outDict
@@ -116,17 +96,17 @@ def define_plots():
         beam=r"geometricSource01beamGlobal01",
         xaxis=xrtplot.XYCAxis(
             label=r"x",
-            fwhmFormatStr=r"%.3f",
-            limits=[-1000, 1000],
-            unit="nm",
-            factor=1e6),
+            fwhmFormatStr=r"%.6f",
+            limits=[-1e-3, 1e-3],
+            unit="mm",
+            factor=1),
         yaxis=xrtplot.XYCAxis(
             label=r"z",
-            fwhmFormatStr=r"%.3f",
-            limits=[-1000+src_z*1e6, 1000+src_z*1e6],
-            offset=src_z*1e6,
-            unit="nm",
-            factor=1e6),
+            fwhmFormatStr=r"%.6f",
+            limits=[source_z-1e-3, source_z+1e-3],
+            offset=source_z,
+            unit="mm",
+            factor=1),
         caxis=xrtplot.XYCAxis(
             label=r"energy",
             unit=r"eV"),
@@ -135,7 +115,7 @@ def define_plots():
     plots.append(Source)
 
     Footprint = xrtplot.XYCPlot(
-        beam=r"ellipticalMirrorParam01beamLocal01",
+        beam=r"M1Param01beamLocal01",
         xaxis=xrtplot.XYCAxis(
             label=r"x",
             fwhmFormatStr=r"%.3f"),
@@ -153,20 +133,20 @@ def define_plots():
         beam=r"screen01beamLocal01",
         xaxis=xrtplot.XYCAxis(
             label=r"x",
-            fwhmFormatStr=r"%.3f",
-#            limits=[-200, 200],
+            fwhmFormatStr=r"%.1f",
+            # limits=[-200, 200],
             unit="nm",
             factor=1e6),
         yaxis=xrtplot.XYCAxis(
             label=r"z",
-            fwhmFormatStr=r"%.3f",
-#            limits=[-200, 200],
+            fwhmFormatStr=r"%.1f",
+            # limits=[-200, 200],
             unit="nm",
             factor=1e6),
         caxis=xrtplot.XYCAxis(
             label=r"energy",
             unit=r"eV"),
-        aspect=r"equal",
+        aspect=r"auto",
         title=r"Focus")
     plots.append(Focus)
 
@@ -181,7 +161,7 @@ def main():
     plots = define_plots()
     xrtrun.run_ray_tracing(
         plots=plots,
-        repeats=1,
+        repeats=16,
         processes=4,
         backend=r"raycing",
         beamLine=beamLine)

@@ -43,15 +43,15 @@ def build_beamline():
     #     p=5000,
     #     q=1000)
     
-    # beamLine.mirror = roes.EllipsoidalMirrorXMF(
-    #     bl=beamLine,
-    #     name=None,
-    #     center=[0, 5000, 0],
-    #     pitch=r"30 mrad",
-    #     limPhysX=[-10.0, 10.0],
-    #     limPhysY=[-500.0, 500.0],
-    #     p=5000,
-    #     q=1000)
+    beamLine.mirror = roes.EllipsoidalMirrorXMF(
+        bl=beamLine,
+        name=None,
+        center=[0, 5000, 0],
+        pitch=r"30 mrad",
+        limPhysX=[-10.0, 10.0],
+        limPhysY=[-500.0, 500.0],
+        p=5000,
+        q=1000)
 
     # beamLine.mirror_xmf = roes.EllipticCylindricalMirrorXMF(
     #     bl=beamLine,
@@ -83,7 +83,7 @@ def build_beamline():
         p=5000,
         q=1000)
     
-    beamLine.mirror = beamLine.mirror_xrt 
+    beamLine.mirror = beamLine.mirror 
 
     
     beamLine.screen = rscreens.Screen(

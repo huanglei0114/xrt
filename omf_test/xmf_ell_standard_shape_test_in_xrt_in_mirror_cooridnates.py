@@ -43,9 +43,6 @@ src_dz = 212e-6
 src_dxprime = 2e-3
 src_dzprime = 2e-3
 
-# print(f"SCR center: [0.000, {em_p+scr_y:.3f}, {scr_z:.3f}]" )
-
-
 def build_beamline():
     beamLine = raycing.BeamLine()
 
@@ -59,34 +56,9 @@ def build_beamline():
         dxprime=src_dxprime,
         dzprime=src_dzprime)
 
-    # beamLine.mirror = roes.EllipticalMirrorParam(
-    #     bl=beamLine,
-    #     name="EM",
-    #     center=[0, 0, 0],
-    #     pitch=m1_theta,
-    #     extraPitch=-m1_theta,
-    #     limPhysX=[-10.0, 10.0],
-    #     limPhysY=[-500.0, 500.0],
-    #     p=em_p,
-    #     q=em_q
-    #     )
-    
-    # beamLine.mirror = roes.EllipsoidalMirrorXMF(
-    #     bl=beamLine,
-    #     name=None,
-    #     center=[0, 0, 0],
-    #     pitch=m1_theta,
-    #     extraPitch=-m1_theta,
-    #     limPhysX=[-10.0, 10.0],
-    #     limPhysY=[-500.0, 500.0],
-    #     p=em_p,
-    #     q=em_q
-    #     )
-    
-
-    beamLine.mirror_xmf = roes.EllipticCylindricalMirrorXMF(
+    beamLine.mirror_e_xrt = roes.EllipticalMirrorParam(
         bl=beamLine,
-        name=None,
+        name="EM",
         center=[0, 0, 0],
         pitch=m1_theta,
         extraPitch=-m1_theta,
@@ -95,8 +67,8 @@ def build_beamline():
         p=em_p,
         q=em_q
         )
-
-    beamLine.mirror_pylost = roes.EllipticCylindricalMirrorPyLost(
+    
+    beamLine.mirror_e_xmf = roes.EllipsoidalMirrorXMF(
         bl=beamLine,
         name=None,
         center=[0, 0, 0],
@@ -108,7 +80,32 @@ def build_beamline():
         q=em_q
         )
     
-    beamLine.mirror_xrt = roes.EllipticalMirror(
+
+    beamLine.mirror_ec_xmf = roes.EllipticCylindricalMirrorXMF(
+        bl=beamLine,
+        name=None,
+        center=[0, 0, 0],
+        pitch=m1_theta,
+        extraPitch=-m1_theta,
+        limPhysX=[-10.0, 10.0],
+        limPhysY=[-500.0, 500.0],
+        p=em_p,
+        q=em_q
+        )
+
+    beamLine.mirror_ec_pylost = roes.EllipticCylindricalMirrorPyLost(
+        bl=beamLine,
+        name=None,
+        center=[0, 0, 0],
+        pitch=m1_theta,
+        extraPitch=-m1_theta,
+        limPhysX=[-10.0, 10.0],
+        limPhysY=[-500.0, 500.0],
+        p=em_p,
+        q=em_q
+        )
+    
+    beamLine.mirror_ec_xrt = roes.EllipticalMirror(
         bl=beamLine,
         name="EM",
         center=[0, 0, 0],
@@ -120,8 +117,8 @@ def build_beamline():
         q=em_q
         )
 
-    beamLine.mirror = beamLine.mirror_xmf
-    
+    beamLine.mirror = beamLine.mirror_e_xmf
+
     beamLine.screen = rscreens.Screen(
         bl=beamLine,
         name="SCR",
@@ -196,13 +193,13 @@ def define_plots():
         beam=r"screen01beamLocal01",
         xaxis=xrtplot.XYCAxis(
             label=r"x",
-            fwhmFormatStr=r"%.3f",
+            fwhmFormatStr=r"%.1f",
             # limits=[-200, 200],
             unit="nm",
             factor=1e6),
         yaxis=xrtplot.XYCAxis(
             label=r"z",
-            fwhmFormatStr=r"%.3f",
+            fwhmFormatStr=r"%.1f",
             # limits=[-200, 200],
             unit="nm",
             factor=1e6),
