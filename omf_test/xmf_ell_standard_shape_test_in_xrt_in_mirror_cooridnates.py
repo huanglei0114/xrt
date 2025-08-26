@@ -119,7 +119,7 @@ def build_beamline():
         p=em_p,
         q=em_q
         )
-    
+
     beamLine.mirror = beamLine.mirror_xmf
     
     beamLine.screen = rscreens.Screen(
@@ -225,7 +225,7 @@ def main():
     xrtrun.run_ray_tracing(
         plots=plots,
         repeats=1,
-        processes=4,
+        processes=16,
         backend=r"raycing",
         beamLine=beamLine)
 

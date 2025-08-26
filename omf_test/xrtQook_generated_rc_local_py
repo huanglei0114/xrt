@@ -77,7 +77,7 @@ def build_beamline():
         p=em_p,
         q=em_q
         )
-
+    
     beamLine.screen = rscreens.Screen(
         bl=beamLine,
         name="SCR",
@@ -174,7 +174,7 @@ def define_plots():
 
 def main():
     beamLine = build_beamline()
-    beamLine.glow()
+    # beamLine.glow()
     E0 = list(beamLine.geometricSource.energies)[0]
     beamLine.alignE=E0
     plots = define_plots()

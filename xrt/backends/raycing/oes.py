@@ -1892,22 +1892,47 @@ class EllipticCylindricalMirrorXMF(OE):
         x_i = 0
         z_i = 0
         beta = - self.delta
-        z_xmf = generate_1d_height(standard_concave_elliptic_cylinder_height, x_xmf, p_xmf, q_xmf, self.theta, x_i, z_i, beta)
-        _, surf_normal_xmf = standard_concave_elliptic_cylinder_height(x_xmf,p_xmf,q_xmf,self.pitch, return_surface_normal_as_extra=True)
-        surf_normal_xmf_x = surf_normal_xmf[0]*np.cos(-beta) - surf_normal_xmf[2]*np.sin(-beta)
-        surf_normal_xmf_y = surf_normal_xmf[1]
-        surf_normal_xmf_z = surf_normal_xmf[0]*np.sin(-beta) + surf_normal_xmf[2]*np.cos(-beta)
-        
-        z = z_xmf*1e3
-        # surface_normal = [-surf_normal_xmf_y, surf_normal_xmf_x, surf_normal_xmf_z]
-        surface_normal = [-surf_normal_xmf[1], surf_normal_xmf[0], surf_normal_xmf[2]]
+        z1d_xmf = generate_1d_height(standard_concave_elliptic_cylinder_height, x_xmf, p_xmf, q_xmf, self.theta, x_i, z_i, beta)
 
-        print(min(surface_normal[0]), max(surface_normal[0]))
-        print(min(surface_normal[1]), max(surface_normal[1]))
-        print(min(surface_normal[2]), max(surface_normal[2]))
-        print(min(x), max(x))
-        print(min(y), max(y))
-        print(min(z), max(z))
+        # Convert MATLAB code to Python
+        # rot_y = [cos(beta), -sin(beta); sin(beta), cos(beta)];
+        # xz = rot_y*[x_xmf; z1d_xmf];
+        # x1d_s_xmf = xz(1,:)
+
+        # rot_y = np.array([[np.cos(beta), -np.sin(beta)],
+        #           [np.sin(beta),  np.cos(beta)]])
+        # xz = rot_y @ np.vstack((x_xmf, z1d_xmf))
+        # x1d_s_xmf = xz[0, :]
+
+        # Update x-coordinate in standard coordinates
+        x1d_s_xmf = x_xmf*np.cos(beta) - z1d_xmf*np.sin(beta)
+
+        # Calculate dz_s/dx_s
+        sx1d_s = standard_concave_elliptic_cylinder_xslope(x1d_s_xmf,p_xmf,q_xmf,self.theta)
+        # Calcualte dz/dx from dz_s/dx_s
+        sx1d_xmf = (sx1d_s*np.cos(beta)-np.sin(beta))/(sx1d_s*np.sin(beta)+np.cos(beta))
+
+        surf_normal_xmf_x = -sx1d_xmf
+        surf_normal_xmf_y = -0
+        surf_normal_xmf_z = 1
+        
+        norm = np.sqrt(surf_normal_xmf_x**2 + surf_normal_xmf_y**2 + surf_normal_xmf_z**2)
+        if np.any(norm == 0):
+            raise ValueError("The normal vector has zero length, which may indicate a singularity in the surface.")
+        nx = surf_normal_xmf_x / norm
+        ny = surf_normal_xmf_y / norm
+        nz = surf_normal_xmf_z / norm
+
+        surface_normal = [-ny, nx, nz]
+        # surface_normal = [-surf_normal_xmf[1], surf_normal_xmf[0], surf_normal_xmf[2]]
+
+        # print(min(surface_normal[0]), max(surface_normal[0]))
+        # print(min(surface_normal[1]), max(surface_normal[1]))
+        # print(min(surface_normal[2]), max(surface_normal[2]))
+        # print(min(x), max(x))
+        # print(min(y), max(y))
+        # z = z_xmf*1e3
+        # print(min(z), max(z))
 
         return surface_normal
 
