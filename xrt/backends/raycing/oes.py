@@ -2451,6 +2451,73 @@ class TanColDiaboloidalMirrorXMF(OE):
 
 
 
+class P1L2DiaboloidalMirrorXMF(OE):
+   """Implements Tangentially collimating diaboloidal mirror in XMF.
+   """
+
+   cl_plist = ("p", "alpha", "ae", "be", "ce")
+   cl_local_z = """
+   float local_z(float8 cl_plist, int i, float x, float y)
+   {
+     float delta_y = cl_plist.s0 * cos(cl_plist.s1) - cl_plist.s4;
+     float delta_z = -cl_plist.s0 * sin(cl_plist.s1);
+     return -cl_plist.s3 *
+         sqrt(1 - (pown(((y+delta_y)/cl_plist.s2),2))) - delta_z;
+   }"""
+   cl_local_n = """
+   float3 local_n(float8 cl_plist, int i, float x, float y)
+   {
+     float3 res;
+     float delta_y = cl_plist.s0 * cos(cl_plist.s1) - cl_plist.s4;
+     res.s0 = 0;
+     res.s1 = -cl_plist.s3 * (y+delta_y) /
+         sqrt(1 - (pown((y+delta_y)/cl_plist.s2,2)) / pown(cl_plist.s2,2));
+     res.s2 = 1.;
+     return normalize(res);
+   }"""
+
+   def __init__(self, *args, **kwargs):
+       """
+       *p* and *q*: float
+       *p* and *q* arms of the mirror, both are positive.
+       """
+       kwargs = self.__pop_kwargs(**kwargs)
+       OE.__init__(self, *args, **kwargs)
+       self.theta = self.pitch # LH-2025-08-25
+
+   def __pop_kwargs(self, **kwargs):
+       self.p = kwargs.pop('p')
+       self.q_t = kwargs.pop('q_t')
+       self.q_s = kwargs.pop('q_s')
+       self.isCylindrical = kwargs.pop('isCylindrical', False)  # always!
+       self.pcorrected = 0
+       return kwargs
+
+   def local_z(self, x, y):
+        x_xmf = y*1e-3
+        y_xmf = -x*1e-3
+        p_xmf = self.p*1e-3
+        q_t_xmf = self.q_t*1e-3
+        q_s_xmf = self.q_s*1e-3
+
+        z_xmf = standard_p1l2_diaboloid_height(x_xmf, y_xmf, p_xmf, q_t_xmf, q_s_xmf, self.theta)
+        z = z_xmf*1e3
+        return z
+
+   def local_n(self, x, y):
+        """Determines the normal vector of OE at (x, y) position."""
+        x_xmf = y*1e-3
+        y_xmf = -x*1e-3
+        p_xmf = self.p*1e-3
+        q_t_xmf = self.q_t*1e-3
+        q_s_xmf = self.q_s*1e-3
+
+        _, surf_normal_xmf = standard_p1l2_diaboloid_height(x_xmf, y_xmf, p_xmf, q_t_xmf, q_s_xmf, self.theta, return_surface_normal_as_extra=True)
+        surface_normal = [-surf_normal_xmf[1], surf_normal_xmf[0], surf_normal_xmf[2]]
+        return surface_normal
+
+
+
 class EllipticalMirrorParam(OE):
     """The elliptical mirror is implemented as a parametric surface. The
     parameterization is the following: *s* - is local coordinate along the
@@ -5706,6 +5773,17 @@ def standard_tan_col_diaboloid_height(x2d: np.ndarray,
         return (z2d, surf_normal)
     else:
         return z2d
+
+
+
+def standard_p1l2_diaboloid_height():
+    pass
+
+
+
+
+
+
 
 
 
