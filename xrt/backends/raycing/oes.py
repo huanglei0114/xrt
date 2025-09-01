@@ -169,6 +169,7 @@ else:
 
 try:
     from stl import mesh
+import numpy as np
     isSTLsupported = True
 except ImportError:
     isSTLsupported = False
@@ -5776,11 +5777,142 @@ def standard_tan_col_diaboloid_height(x2d: np.ndarray,
 
 
 
-def standard_p1l2_diaboloid_height():
-    pass
+def standard_p1l2_diaboloid_height(x2d, y2d, p, q_t, q_s, theta):
+    """
+    Standard 2D shape of the diaboloid-like concave mirror focusing 1 point to 2 lines.
 
+    Parameters
+    ----------
+    x2d : np.ndarray
+        2D matrix of x-coordinates
+    y2d : np.ndarray
+        2D matrix of y-coordinates
+    p : float
+        Source distance
+    q_t : float
+        Tangential focus distance
+    q_s : float
+        Sagittal focus distance
+    theta : float
+        Grazing angle
 
+    Returns
+    -------
+    z2d : np.ndarray
+        2D matrix of z-coordinates
+    z3d : np.ndarray
+        z-coordinates history in iterations
+    """
 
+    q = 2 / (1 / q_t + 1 / q_s)
+    z2d = standard_concave_ellipsoid_height(x2d, y2d, p, q, theta)
+    sz = z2d.shape
+    max_num_of_iters = 10
+    z3d = np.zeros(sz + (max_num_of_iters,))
+
+    for iter_num in range(max_num_of_iters):
+        d_t = q_t - z2d * np.sin(theta) - x2d * np.cos(theta)
+        d_s = q_s - z2d * np.sin(theta) - x2d * np.cos(theta)
+        sqrt_term = np.sqrt(1 + y2d ** 2 / d_s ** 2)
+        q_mt = q_t * sqrt_term + q_s * (1 - sqrt_term)
+
+        g_mt = (
+            (2 * q_t * (z2d * np.sin(theta) + x2d * np.cos(theta)) - (z2d * np.sin(theta) + x2d * np.cos(theta)) ** 2)
+            * y2d ** 2 / d_s ** 2
+            + 2 * q_t * sqrt_term * q_s * (1 - sqrt_term)
+            + q_s ** 2 * (1 - sqrt_term) ** 2
+        )
+        g_mt = np.where(np.iscomplex(g_mt), np.nan, g_mt)
+
+        A = 4 * (p + q_mt) ** 2 - 4 * (p - q_t) ** 2 * np.sin(theta) ** 2
+        B0 = -(
+            8 * (p + q_mt) ** 2 * q_t * np.sin(theta)
+            + 4 * (p - q_t)
+            * np.sin(theta)
+            * (
+                y2d ** 2 * (d_t ** 2 - d_s ** 2) / d_s ** 2
+                - 2 * x2d * (p + q_t) * np.cos(theta)
+                + 2 * p * q_mt
+                + q_mt ** 2
+                + q_t ** 2
+            )
+        )
+        B = (
+            -8 * (p ** 2 + 2 * p * q_mt) * q_t * np.sin(theta)
+            - 4 * q_t * np.sin(theta) * (g_mt + 2 * x2d * (p + q_t) * np.cos(theta) - 2 * p * q_mt + y2d ** 2)
+            - 4 * p * np.sin(theta)
+            * (
+                y2d ** 2 * d_t ** 2 / d_s ** 2
+                - y2d ** 2
+                - 2 * x2d * (p + q_t) * np.cos(theta)
+                + 2 * p * q_mt
+                + q_mt ** 2
+                + q_t ** 2
+            )
+        )
+
+        C0 = (
+            4 * (p + q_mt) ** 2
+            * (
+                x2d ** 2
+                - 2 * x2d * q_t * np.cos(theta)
+                + y2d ** 2 * d_t ** 2 / d_s ** 2
+                + q_t ** 2
+            )
+            - (
+                y2d ** 2 * (d_t ** 2 - d_s ** 2) / d_s ** 2
+                - 2 * x2d * (p + q_t) * np.cos(theta)
+                + 2 * p * q_mt
+                + q_mt ** 2
+                + q_t ** 2
+            )
+            ** 2
+        )
+        C = (
+            -g_mt ** 2
+            - (4 * x2d * np.cos(theta) * q_t + 4 * p * q_mt + 4 * p ** 2) * g_mt
+            + (4 * x2d ** 2 * np.cos(theta) ** 2) * (q_mt ** 2 - q_t ** 2)
+            + (2 * y2d ** 2 + 4 * p * x2d * np.cos(theta)) * (y2d ** 2 * d_t ** 2 / d_s ** 2)
+            + 4 * p * x2d * np.cos(theta) * (q_mt - q_t) ** 2
+            + 8 * p * x2d * np.cos(theta) * (p + x2d * np.cos(theta)) * (q_mt - q_t)
+            + (2 * y2d ** 2)
+            * (
+                q_mt ** 2
+                + q_t ** 2
+                - 2 * x2d * np.cos(theta) * q_t
+                + 2 * p * q_mt
+                - 2 * p * x2d * np.cos(theta)
+                - 0.5 * y2d ** 2
+            )
+            + 4 * (p + q_mt) ** 2 * x2d ** 2 * np.sin(theta) ** 2
+        )
+
+        A = np.where(np.iscomplex(A), np.nan, A)
+        B0 = np.where(np.iscomplex(B0), np.nan, B0)
+        B = np.where(np.iscomplex(B), np.nan, B)
+        C0 = np.where(np.iscomplex(C0), np.nan, C0)
+        C = np.where(np.iscomplex(C), np.nan, C)
+
+        if q_s == -p and q_t == -p:
+            B = B0
+            C = C0
+
+        discriminant = B ** 2 - 4 * A * C
+        z2d_new = (-B - np.sqrt(discriminant)) / (2 * A)
+        z2d_new = np.where(np.iscomplex(z2d_new), np.nan, np.real(z2d_new))
+
+        z3d[..., iter_num] = z2d_new
+
+        if iter_num > 0:
+            dz2d = z3d[..., iter_num] - z3d[..., iter_num - 1]
+            rms_dz = np.nanstd(dz2d)
+            if rms_dz < 1e-12:
+                z3d = z3d[..., : iter_num + 1]
+                return z2d_new, z3d
+
+        z2d = z2d_new
+
+    return z2d, z3d
 
 
 
