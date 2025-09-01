@@ -16,14 +16,16 @@ import xrt.backends.raycing as raycing
 import xrt.plotter as xrtplot
 import xrt.runner as xrtrun
 
+
 m1_theta = 30e-3
 m1_p = 5000
-m1_q = 1000
+m1_q_t = 1000
+m1_q_s = 1000
 source_y = - m1_p * np.cos(m1_theta)
 source_z = m1_p * np.sin(m1_theta)
 
-scr_y = m1_q * np.cos(m1_theta)
-scr_z = m1_q * np.sin(m1_theta)
+scr_y = m1_q_t * np.cos(m1_theta)
+scr_z = m1_q_t * np.sin(m1_theta)
 
 src_dx = 212e-6
 src_dz = 212e-6
@@ -53,7 +55,8 @@ def build_beamline():
         limPhysX=[-10.0, 10.0],
         limPhysY=[-500.0, 500.0],
         p=m1_p,
-        q=m1_q
+        q_t=m1_q_t,
+        q_s=m1_q_s,
         )
     
     beamLine.mirror = beamLine.mirror_xmf
@@ -161,7 +164,7 @@ def main():
     plots = define_plots()
     xrtrun.run_ray_tracing(
         plots=plots,
-        repeats=16,
+        repeats=1,
         processes=4,
         backend=r"raycing",
         beamLine=beamLine)

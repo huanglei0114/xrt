@@ -167,17 +167,6 @@ else:
     isOpenCL = False
 
 
-try:
-    from stl import mesh
-import numpy as np
-    isSTLsupported = True
-except ImportError:
-    isSTLsupported = False
-
-__fdir__ = os.path.dirname(__file__)
-
-allParamsSorted = []
-
 
 def flatten(x):
     if x is None:
@@ -5777,7 +5766,14 @@ def standard_tan_col_diaboloid_height(x2d: np.ndarray,
 
 
 
-def standard_p1l2_diaboloid_height(x2d, y2d, p, q_t, q_s, theta):
+def standard_p1l2_diaboloid_height(x2d: np.ndarray, 
+                                   y2d: np.ndarray, 
+                                   p: float, 
+                                   q_t: float, 
+                                   q_s: float, 
+                                   theta: float,
+                                   return_surface_normal_as_extra: bool = False
+                                   ):
     """
     Standard 2D shape of the diaboloid-like concave mirror focusing 1 point to 2 lines.
 
@@ -5805,7 +5801,10 @@ def standard_p1l2_diaboloid_height(x2d, y2d, p, q_t, q_s, theta):
     """
 
     q = 2 / (1 / q_t + 1 / q_s)
-    z2d = standard_concave_ellipsoid_height(x2d, y2d, p, q, theta)
+    z2d, concave_ellipsoid_surf_normal = standard_concave_ellipsoid_height(x2d, y2d, p, q, theta, return_surface_normal_as_extra=True)
+    dz2d_dx2d = - concave_ellipsoid_surf_normal[0]/concave_ellipsoid_surf_normal[2]
+    dz2d_dy2d = - concave_ellipsoid_surf_normal[1]/concave_ellipsoid_surf_normal[2]
+
     sz = z2d.shape
     max_num_of_iters = 10
     z3d = np.zeros(sz + (max_num_of_iters,))
@@ -5901,18 +5900,363 @@ def standard_p1l2_diaboloid_height(x2d, y2d, p, q_t, q_s, theta):
         z2d_new = (-B - np.sqrt(discriminant)) / (2 * A)
         z2d_new = np.where(np.iscomplex(z2d_new), np.nan, np.real(z2d_new))
 
+        
+
+
+        # Calculate the first derivatives with respect to x2d and y2d, respectively
+        
+        # Calculate the first derivatives of d_t with respect to x2d and y2d
+        # d_t = q_t - z2d * np.sin(theta) - x2d * np.cos(theta)
+        # So,
+        # d_t_dx2d = -dz2d_dx2d * np.sin(theta) - np.cos(theta)
+        # d_t_dy2d = -dz2d_dy2d * np.sin(theta)
+
+        d_t_dx2d = -dz2d_dx2d * np.sin(theta) - np.cos(theta)
+        d_t_dy2d = -dz2d_dy2d * np.sin(theta)
+
+        # Calculate the first derivatives of d_s with respect to x2d and y2d
+        # d_s = q_s - z2d * np.sin(theta) - x2d * np.cos(theta)
+        # So,
+        # d_s_dx2d = -dz2d_dx2d * np.sin(theta) - np.cos(theta)
+        # d_s_dy2d = -dz2d_dy2d * np.sin(theta)
+
+        d_s_dx2d = -dz2d_dx2d * np.sin(theta) - np.cos(theta)
+        d_s_dy2d = -dz2d_dy2d * np.sin(theta)
+
+        # Calculate the first derivatives of sqrt_term with respect to x2d and y2d
+        # sqrt_term = np.sqrt(1 + y2d ** 2 / d_s ** 2)
+        # Let u = 1 + y2d**2 / d_s**2
+        # Then sqrt_term = u**0.5
+
+        # First, derivatives of u
+        # u_dx2d = d/dx2d [1 + y2d**2 / d_s**2] = -2 * y2d**2 * d_s_dx2d / d_s**3
+        # u_dy2d = d/dy2d [1 + y2d**2 / d_s**2] = 2 * y2d / d_s**2 - 2 * y2d**2 * d_s_dy2d / d_s**3
+
+        u = 1 + y2d**2 / d_s**2
+        u_dx2d = -2 * y2d**2 * d_s_dx2d / d_s**3
+        u_dy2d = 2 * y2d / d_s**2 - 2 * y2d**2 * d_s_dy2d / d_s**3
+
+        sqrt_term_dx2d = 0.5 * u**(-0.5) * u_dx2d
+        sqrt_term_dy2d = 0.5 * u**(-0.5) * u_dy2d
+
+        # Calculate the first derivatives of q_mt with respect to x2d and y2d
+        # q_mt = q_t * sqrt_term + q_s * (1 - sqrt_term)
+        # So,
+        # q_mt_dx2d = q_t * sqrt_term_dx2d - q_s * sqrt_term_dx2d
+        #           = (q_t - q_s) * sqrt_term_dx2d
+        # q_mt_dy2d = q_t * sqrt_term_dy2d - q_s * sqrt_term_dy2d
+        #           = (q_t - q_s) * sqrt_term_dy2d
+
+        q_mt_dx2d = (q_t - q_s) * sqrt_term_dx2d
+        q_mt_dy2d = (q_t - q_s) * sqrt_term_dy2d
+
+        # Calculate the first derivatives of g_mt with respect to x2d and y2d
+        # g_mt = (
+        #     (2 * q_t * (z2d * np.sin(theta) + x2d * np.cos(theta)) - (z2d * np.sin(theta) + x2d * np.cos(theta)) ** 2)
+        #     * y2d ** 2 / d_s ** 2
+        #     + 2 * q_t * sqrt_term * q_s * (1 - sqrt_term)
+        #     + q_s ** 2 * (1 - sqrt_term) ** 2
+        # )
+
+        # First, compute derivatives of (z2d * np.sin(theta) + x2d * np.cos(theta))
+        dzx_dx2d = dz2d_dx2d * np.sin(theta) + np.cos(theta)
+        dzx_dy2d = dz2d_dy2d * np.sin(theta)
+
+        # Compute derivatives of (z2d * np.sin(theta) + x2d * np.cos(theta)) ** 2
+        dzx2_dx2d = 2 * (z2d * np.sin(theta) + x2d * np.cos(theta)) * dzx_dx2d
+        dzx2_dy2d = 2 * (z2d * np.sin(theta) + x2d * np.cos(theta)) * dzx_dy2d
+
+        # Compute derivatives of y2d ** 2 / d_s ** 2
+        dy2d2_ds_dx2d = -2 * y2d ** 2 * d_s_dx2d / d_s ** 3
+        dy2d2_ds_dy2d = 2 * y2d / d_s ** 2 - 2 * y2d ** 2 * d_s_dy2d / d_s ** 3
+
+        # First term derivatives
+        term1_dx2d = (
+            2 * q_t * dzx_dx2d - dzx2_dx2d
+        ) * y2d ** 2 / d_s ** 2 + \
+            (2 * q_t * (z2d * np.sin(theta) + x2d * np.cos(theta)) - (z2d * np.sin(theta) + x2d * np.cos(theta)) ** 2) * dy2d2_ds_dx2d
+
+        term1_dy2d = (
+            2 * q_t * dzx_dy2d - dzx2_dy2d
+        ) * y2d ** 2 / d_s ** 2 + \
+            (2 * q_t * (z2d * np.sin(theta) + x2d * np.cos(theta)) - (z2d * np.sin(theta) + x2d * np.cos(theta)) ** 2) * dy2d2_ds_dy2d
+
+        # Second term derivatives
+        term2_dx2d = 2 * q_t * q_s * (sqrt_term_dx2d - sqrt_term_dx2d)
+        term2_dy2d = 2 * q_t * q_s * (sqrt_term_dy2d - sqrt_term_dy2d)
+
+        # Third term derivatives
+        term3_dx2d = 2 * q_s ** 2 * (1 - sqrt_term) * (-sqrt_term_dx2d)
+        term3_dy2d = 2 * q_s ** 2 * (1 - sqrt_term) * (-sqrt_term_dy2d)
+
+        # Total derivatives
+        g_mt_dx2d = term1_dx2d + term2_dx2d + term3_dx2d
+        g_mt_dy2d = term1_dy2d + term2_dy2d + term3_dy2d
+
+        # Calculate the first derivatives of A with respect to x2d and y2d
+
+        # A = 4 * (p + q_mt) ** 2 - 4 * (p - q_t) ** 2 * np.sin(theta) ** 2
+        # Only q_mt depends on x2d and y2d
+        dA_dx2d = 8 * (p + q_mt) * q_mt_dx2d
+        dA_dy2d = 8 * (p + q_mt) * q_mt_dy2d
+
+        if q_s == -p and q_t == -p:
+            # B0 = -(8 * (p + q_mt) ** 2 * q_t * np.sin(theta)
+            #        + 4 * (p - q_t) * np.sin(theta) *
+            #          (y2d ** 2 * (d_t ** 2 - d_s ** 2) / d_s ** 2
+            #           - 2 * x2d * (p + q_t) * np.cos(theta)
+            #           + 2 * p * q_mt
+            #           + q_mt ** 2
+            #           + q_t ** 2))
+            # Only q_mt, d_t, d_s depend on x2d and y2d
+
+            # First term: 8 * (p + q_mt) ** 2 * q_t * np.sin(theta)
+            dB0_dx2d_term1 = 16 * (p + q_mt) * q_mt_dx2d * q_t * np.sin(theta)
+            dB0_dy2d_term1 = 16 * (p + q_mt) * q_mt_dy2d * q_t * np.sin(theta)
+
+            # Second term inside big parentheses
+            # y2d ** 2 * (d_t ** 2 - d_s ** 2) / d_s ** 2
+            # Derivatives:
+            # Let f = y2d ** 2 * (d_t ** 2 - d_s ** 2) / d_s ** 2
+            # df/dx2d = y2d ** 2 * (2 * d_t * d_t_dx2d - 2 * d_s * d_s_dx2d) / d_s ** 2
+            #           - y2d ** 2 * (d_t ** 2 - d_s ** 2) * 2 * d_s * d_s_dx2d / d_s ** 4
+            # df/dy2d = 2 * y2d * (d_t ** 2 - d_s ** 2) / d_s ** 2
+            #           + y2d ** 2 * (2 * d_t * d_t_dy2d - 2 * d_s * d_s_dy2d) / d_s ** 2
+            #           - y2d ** 2 * (d_t ** 2 - d_s ** 2) * 2 * d_s * d_s_dy2d / d_s ** 4
+
+            df_dx2d = y2d ** 2 * (2 * d_t * d_t_dx2d - 2 * d_s * d_s_dx2d) / d_s ** 2 \
+                - y2d ** 2 * (d_t ** 2 - d_s ** 2) * 2 * d_s * d_s_dx2d / d_s ** 4
+            df_dy2d = 2 * y2d * (d_t ** 2 - d_s ** 2) / d_s ** 2 \
+                + y2d ** 2 * (2 * d_t * d_t_dy2d - 2 * d_s * d_s_dy2d) / d_s ** 2 \
+                - y2d ** 2 * (d_t ** 2 - d_s ** 2) * 2 * d_s * d_s_dy2d / d_s ** 4
+
+            # -2 * x2d * (p + q_t) * np.cos(theta)
+            dterm_dx2d = -2 * (p + q_t) * np.cos(theta)
+            dterm_dy2d = 0
+
+            # 2 * p * q_mt
+            dterm2_dx2d = 2 * p * q_mt_dx2d
+            dterm2_dy2d = 2 * p * q_mt_dy2d
+
+            # q_mt ** 2
+            dterm3_dx2d = 2 * q_mt * q_mt_dx2d
+            dterm3_dy2d = 2 * q_mt * q_mt_dy2d
+
+            # q_t ** 2
+            dterm4_dx2d = 0
+            dterm4_dy2d = 0
+
+            # Sum all terms inside big parentheses
+            dparent_dx2d = df_dx2d + dterm_dx2d + dterm2_dx2d + dterm3_dx2d + dterm4_dx2d
+            dparent_dy2d = df_dy2d + dterm_dy2d + dterm2_dy2d + dterm3_dy2d + dterm4_dy2d
+
+            dB0_dx2d_term2 = 4 * (p - q_t) * np.sin(theta) * dparent_dx2d
+            dB0_dy2d_term2 = 4 * (p - q_t) * np.sin(theta) * dparent_dy2d
+
+            dB0_dx2d = - (dB0_dx2d_term1 + dB0_dx2d_term2)
+            dB0_dy2d = - (dB0_dy2d_term1 + dB0_dy2d_term2)
+
+
+            # C0 = 4 * (p + q_mt) ** 2 * (x2d ** 2 - 2 * x2d * q_t * np.cos(theta) + y2d ** 2 * d_t ** 2 / d_s ** 2 + q_t ** 2)
+            #      - (y2d ** 2 * (d_t ** 2 - d_s ** 2) / d_s ** 2 - 2 * x2d * (p + q_t) * np.cos(theta) + 2 * p * q_mt + q_mt ** 2 + q_t ** 2) ** 2
+            # First term:
+            dC0_dx2d_term1 = 8 * (p + q_mt) * q_mt_dx2d * (x2d ** 2 - 2 * x2d * q_t * np.cos(theta) + y2d ** 2 * d_t ** 2 / d_s ** 2 + q_t ** 2) \
+                    + 4 * (p + q_mt) ** 2 * (2 * x2d - 2 * q_t * np.cos(theta) + y2d ** 2 * (2 * d_t * d_t_dx2d / d_s ** 2 - d_t ** 2 * 2 * d_s * d_s_dx2d / d_s ** 4))
+            dC0_dy2d_term1 = 8 * (p + q_mt) * q_mt_dy2d * (x2d ** 2 - 2 * x2d * q_t * np.cos(theta) + y2d ** 2 * d_t ** 2 / d_s ** 2 + q_t ** 2) \
+                    + 4 * (p + q_mt) ** 2 * (2 * y2d * d_t ** 2 / d_s ** 2 + y2d ** 2 * (2 * d_t * d_t_dy2d / d_s ** 2 - d_t ** 2 * 2 * d_s * d_s_dy2d / d_s ** 4))
+
+            # Second term: let g = (y2d ** 2 * (d_t ** 2 - d_s ** 2) / d_s ** 2 - 2 * x2d * (p + q_t) * np.cos(theta) + 2 * p * q_mt + q_mt ** 2 + q_t ** 2)
+            # d(g^2)/dx2d = 2 * g * dg/dx2d
+            # d(g^2)/dy2d = 2 * g * dg/dy2d
+            g = y2d ** 2 * (d_t ** 2 - d_s ** 2) / d_s ** 2 - 2 * x2d * (p + q_t) * np.cos(theta) + 2 * p * q_mt + q_mt ** 2 + q_t ** 2
+            dg_dx2d = df_dx2d - 2 * (p + q_t) * np.cos(theta) + 2 * p * q_mt_dx2d + 2 * q_mt * q_mt_dx2d
+            dg_dy2d = df_dy2d + 2 * p * q_mt_dy2d + 2 * q_mt * q_mt_dy2d
+
+            dC0_dx2d_term2 = 2 * g * dg_dx2d
+            dC0_dy2d_term2 = 2 * g * dg_dy2d
+
+            dC0_dx2d = dC0_dx2d_term1 - dC0_dx2d_term2
+            dC0_dy2d = dC0_dy2d_term1 - dC0_dy2d_term2
+
+
+            dB_dx2d = dB0_dx2d
+            dB_dy2d = dB0_dy2d
+
+            dC_dx2d = dC0_dx2d
+            dC_dy2d = dC0_dy2d
+
+
+        else:
+            # Calculate the first derivatives of B with respect to x2d and y2d
+            # B = -8 * (p ** 2 + 2 * p * q_mt) * q_t * np.sin(theta)
+            #     - 4 * q_t * np.sin(theta) * (g_mt + 2 * x2d * (p + q_t) * np.cos(theta) - 2 * p * q_mt + y2d ** 2)
+            #     - 4 * p * np.sin(theta) * (
+            #         y2d ** 2 * d_t ** 2 / d_s ** 2
+            #         - y2d ** 2
+            #         - 2 * x2d * (p + q_t) * np.cos(theta)
+            #         + 2 * p * q_mt
+            #         + q_mt ** 2
+            #         + q_t ** 2
+            #     )
+
+            # First term: -8 * (p ** 2 + 2 * p * q_mt) * q_t * np.sin(theta)
+            dB_dx2d_term1 = -8 * 2 * p * q_mt_dx2d * q_t * np.sin(theta)
+            dB_dy2d_term1 = -8 * 2 * p * q_mt_dy2d * q_t * np.sin(theta)
+
+            # Second term: -4 * q_t * np.sin(theta) * (g_mt + 2 * x2d * (p + q_t) * np.cos(theta) - 2 * p * q_mt + y2d ** 2)
+            dB_dx2d_term2 = -4 * q_t * np.sin(theta) * (
+                g_mt_dx2d + 2 * (p + q_t) * np.cos(theta) - 2 * p * q_mt_dx2d
+            )
+            dB_dy2d_term2 = -4 * q_t * np.sin(theta) * (
+                g_mt_dy2d - 2 * p * q_mt_dy2d + 2 * y2d
+            )
+
+            # Third term: -4 * p * np.sin(theta) * (
+            #     y2d ** 2 * d_t ** 2 / d_s ** 2
+            #     - y2d ** 2
+            #     - 2 * x2d * (p + q_t) * np.cos(theta)
+            #     + 2 * p * q_mt
+            #     + q_mt ** 2
+            #     + q_t ** 2
+            # )
+            # Let F = y2d ** 2 * d_t ** 2 / d_s ** 2 - y2d ** 2 - 2 * x2d * (p + q_t) * np.cos(theta) + 2 * p * q_mt + q_mt ** 2 + q_t ** 2
+            # Compute derivatives of F
+            dF_dx2d = (
+                2 * y2d ** 2 * d_t * d_t_dx2d / d_s ** 2
+                - y2d ** 2 * d_t ** 2 * 2 * d_s * d_s_dx2d / d_s ** 4
+                - 2 * (p + q_t) * np.cos(theta)
+                + 2 * p * q_mt_dx2d
+                + 2 * q_mt * q_mt_dx2d
+            )
+            dF_dy2d = (
+                2 * y2d * d_t ** 2 / d_s ** 2
+                + 2 * y2d ** 2 * d_t * d_t_dy2d / d_s ** 2
+                - y2d ** 2 * d_t ** 2 * 2 * d_s * d_s_dy2d / d_s ** 4
+                - 2 * y2d
+                + 2 * p * q_mt_dy2d
+                + 2 * q_mt * q_mt_dy2d
+            )
+            dB_dx2d_term3 = -4 * p * np.sin(theta) * dF_dx2d
+            dB_dy2d_term3 = -4 * p * np.sin(theta) * dF_dy2d
+
+            # Sum all terms for the derivatives
+            dB_dx2d = dB_dx2d_term1 + dB_dx2d_term2 + dB_dx2d_term3
+            dB_dy2d = dB_dy2d_term1 + dB_dy2d_term2 + dB_dy2d_term3
+
+
+            # Calculate the first derivatives of C with respect to x2d and y2d
+            # C is a complex expression, so we need to apply the chain rule term by term
+
+            # For brevity, let's denote:
+            # C = -g_mt ** 2
+            #     - (4 * x2d * np.cos(theta) * q_t + 4 * p * q_mt + 4 * p ** 2) * g_mt
+            #     + (4 * x2d ** 2 * np.cos(theta) ** 2) * (q_mt ** 2 - q_t ** 2)
+            #     + (2 * y2d ** 2 + 4 * p * x2d * np.cos(theta)) * (y2d ** 2 * d_t ** 2 / d_s ** 2)
+            #     + 4 * p * x2d * np.cos(theta) * (q_mt - q_t) ** 2
+            #     + 8 * p * x2d * np.cos(theta) * (p + x2d * np.cos(theta)) * (q_mt - q_t)
+            #     + (2 * y2d ** 2) * (q_mt ** 2 + q_t ** 2 - 2 * x2d * np.cos(theta) * q_t + 2 * p * q_mt - 2 * p * x2d * np.cos(theta) - 0.5 * y2d ** 2)
+            #     + 4 * (p + q_mt) ** 2 * x2d ** 2 * np.sin(theta) ** 2
+
+            # Compute derivatives term by term
+
+            # Term 1: -g_mt ** 2
+            dC_dx2d_term1 = -2 * g_mt * g_mt_dx2d
+            dC_dy2d_term1 = -2 * g_mt * g_mt_dy2d
+
+            # Term 2: - (A1) * g_mt, where A1 = (4 * x2d * np.cos(theta) * q_t + 4 * p * q_mt + 4 * p ** 2)
+            A1 = 4 * x2d * np.cos(theta) * q_t + 4 * p * q_mt + 4 * p ** 2
+            dA1_dx2d = 4 * np.cos(theta) * q_t + 4 * p * q_mt_dx2d
+            dA1_dy2d = 4 * p * q_mt_dy2d
+            dC_dx2d_term2 = - (dA1_dx2d * g_mt + A1 * g_mt_dx2d)
+            dC_dy2d_term2 = - (dA1_dy2d * g_mt + A1 * g_mt_dy2d)
+
+            # Term 3: (4 * x2d ** 2 * np.cos(theta) ** 2) * (q_mt ** 2 - q_t ** 2)
+            B1 = 4 * x2d ** 2 * np.cos(theta) ** 2
+            dB1_dx2d = 8 * x2d * np.cos(theta) ** 2
+            dB1_dy2d = 0
+            dC_dx2d_term3 = dB1_dx2d * (q_mt ** 2 - q_t ** 2) + B1 * (2 * q_mt * q_mt_dx2d)
+            dC_dy2d_term3 = dB1_dy2d * (q_mt ** 2 - q_t ** 2) + B1 * (2 * q_mt * q_mt_dy2d)
+
+            # Term 4: (2 * y2d ** 2 + 4 * p * x2d * np.cos(theta)) * (y2d ** 2 * d_t ** 2 / d_s ** 2)
+            C1 = 2 * y2d ** 2 + 4 * p * x2d * np.cos(theta)
+            dC1_dx2d = 4 * p * np.cos(theta)
+            dC1_dy2d = 4 * y2d
+            D1 = y2d ** 2 * d_t ** 2 / d_s ** 2
+            # Derivatives of D1
+            dD1_dx2d = 2 * y2d ** 2 * d_t * d_t_dx2d / d_s ** 2 - y2d ** 2 * d_t ** 2 * 2 * d_s * d_s_dx2d / d_s ** 4
+            dD1_dy2d = 2 * y2d * d_t ** 2 / d_s ** 2 + 2 * y2d ** 2 * d_t * d_t_dy2d / d_s ** 2 - y2d ** 2 * d_t ** 2 * 2 * d_s * d_s_dy2d / d_s ** 4
+            dC_dx2d_term4 = dC1_dx2d * D1 + C1 * dD1_dx2d
+            dC_dy2d_term4 = dC1_dy2d * D1 + C1 * dD1_dy2d
+
+            # Term 5: 4 * p * x2d * np.cos(theta) * (q_mt - q_t) ** 2
+            E1 = 4 * p * x2d * np.cos(theta)
+            dE1_dx2d = 4 * p * np.cos(theta)
+            dE1_dy2d = 0
+            dC_dx2d_term5 = dE1_dx2d * (q_mt - q_t) ** 2 + E1 * 2 * (q_mt - q_t) * q_mt_dx2d
+            dC_dy2d_term5 = dE1_dy2d * (q_mt - q_t) ** 2 + E1 * 2 * (q_mt - q_t) * q_mt_dy2d
+
+            # Term 6: 8 * p * x2d * np.cos(theta) * (p + x2d * np.cos(theta)) * (q_mt - q_t)
+            F1 = 8 * p * x2d * np.cos(theta) * (p + x2d * np.cos(theta))
+            dF1_dx2d = 8 * p * np.cos(theta) * (p + x2d * np.cos(theta)) + 8 * p * x2d * np.cos(theta) * np.cos(theta)
+            dF1_dy2d = 0
+            dC_dx2d_term6 = dF1_dx2d * (q_mt - q_t) + F1 * q_mt_dx2d
+            dC_dy2d_term6 = dF1_dy2d * (q_mt - q_t) + F1 * q_mt_dy2d
+
+            # Term 7: (2 * y2d ** 2) * (q_mt ** 2 + q_t ** 2 - 2 * x2d * np.cos(theta) * q_t + 2 * p * q_mt - 2 * p * x2d * np.cos(theta) - 0.5 * y2d ** 2)
+            G1 = 2 * y2d ** 2
+            dG1_dx2d = 0
+            dG1_dy2d = 4 * y2d
+            H1 = q_mt ** 2 + q_t ** 2 - 2 * x2d * np.cos(theta) * q_t + 2 * p * q_mt - 2 * p * x2d * np.cos(theta) - 0.5 * y2d ** 2
+            dH1_dx2d = 2 * q_mt * q_mt_dx2d - 2 * np.cos(theta) * q_t + 2 * p * q_mt_dx2d - 2 * p * np.cos(theta)
+            dH1_dy2d = 2 * q_mt * q_mt_dy2d - y2d
+            dC_dx2d_term7 = dG1_dx2d * H1 + G1 * dH1_dx2d
+            dC_dy2d_term7 = dG1_dy2d * H1 + G1 * dH1_dy2d
+
+            # Term 8: 4 * (p + q_mt) ** 2 * x2d ** 2 * np.sin(theta) ** 2
+            I1 = 4 * (p + q_mt) ** 2 * np.sin(theta) ** 2
+            dI1_dx2d = 8 * (p + q_mt) * q_mt_dx2d * np.sin(theta) ** 2
+            dI1_dy2d = 8 * (p + q_mt) * q_mt_dy2d * np.sin(theta) ** 2
+            dC_dx2d_term8 = dI1_dx2d * x2d ** 2 + I1 * 2 * x2d
+            dC_dy2d_term8 = dI1_dy2d * x2d ** 2
+
+            # Sum all terms for the derivatives
+            dC_dx2d = (
+                dC_dx2d_term1 + dC_dx2d_term2 + dC_dx2d_term3 + dC_dx2d_term4 +
+                dC_dx2d_term5 + dC_dx2d_term6 + dC_dx2d_term7 + dC_dx2d_term8
+            )
+            dC_dy2d = (
+                dC_dy2d_term1 + dC_dy2d_term2 + dC_dy2d_term3 + dC_dy2d_term4 +
+                dC_dy2d_term5 + dC_dy2d_term6 + dC_dy2d_term7 + dC_dy2d_term8
+            )
+
+        # Surface normal
+        df_dx = dA_dx2d + dB_dx2d + dC_dx2d
+        df_dy = dA_dy2d + dB_dy2d + dC_dy2d
+        df_dz = 2*A*z2d_new + B
+        
+        norm = np.sqrt(df_dx**2 + df_dy**2 + df_dz**2)
+        if np.any(norm == 0):
+            raise ValueError("The normal vector has zero length, which may indicate a singularity in the surface.")
+        nx = - df_dx / norm
+        ny = - df_dy / norm
+        nz = - df_dz / norm
+        surf_normal = [nx, ny, nz]
+
         z3d[..., iter_num] = z2d_new
+        z2d = z2d_new
 
         if iter_num > 0:
             dz2d = z3d[..., iter_num] - z3d[..., iter_num - 1]
             rms_dz = np.nanstd(dz2d)
             if rms_dz < 1e-12:
                 z3d = z3d[..., : iter_num + 1]
-                return z2d_new, z3d
+                break
 
-        z2d = z2d_new
-
-    return z2d, z3d
+    
+    if return_surface_normal_as_extra:
+        return (z2d, surf_normal)
+    else:
+        return z2d
 
 
 

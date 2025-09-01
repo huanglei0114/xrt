@@ -16,6 +16,9 @@ import xrt.backends.raycing as raycing
 import xrt.plotter as xrtplot
 import xrt.runner as xrtrun
 
+import xrtCodeForLei as roes_joe
+
+
 m1_theta = 30e-3
 m1_p = 5000
 m1_q = 1000
@@ -56,7 +59,20 @@ def build_beamline():
         q=m1_q
         )
     
-    beamLine.mirror = beamLine.mirror_xmf
+    beamLine.mirror_joe = roes_joe.TanCollDiaboloidMirrorJoe(
+        bl=beamLine,
+        name=None,
+        center=[0, 0, 0],
+        theta=m1_theta,
+        #extraPitch=-m1_theta,
+        limPhysX=[-10.0, 10.0],
+        limPhysY=[-500.0, 500.0],
+        p=m1_p,
+        q=m1_q
+        )
+    
+    beamLine.mirror = beamLine.mirror_xmf # Using XMF TCD
+    # beamLine.mirror = beamLine.mirror_joe # Using Joe's TCD
 
     beamLine.screen = rscreens.Screen(
         bl=beamLine,
