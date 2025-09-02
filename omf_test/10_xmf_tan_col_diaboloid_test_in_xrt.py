@@ -70,10 +70,10 @@ def build_beamline():
         p=m1_p,
         q=m1_q
         )
-    
+ 
     beamLine.mirror = beamLine.mirror_xmf # Using XMF TCD
     # beamLine.mirror = beamLine.mirror_joe # Using Joe's TCD
-
+    
     beamLine.screen = rscreens.Screen(
         bl=beamLine,
         name="SCR",
@@ -91,7 +91,7 @@ def run_process(beamLine):
 
     screen01beamLocal01 = beamLine.screen.expose(
         beam=M1Param01beamGlobal01)
-
+   
     outDict = {
         'geometricSource01beamGlobal01': geometricSource01beamGlobal01,
         'M1Param01beamGlobal01': M1Param01beamGlobal01,
@@ -157,15 +157,15 @@ def define_plots():
             label=r"z",
             fwhmFormatStr=r"%.1f",
             # limits=[-200, 200],
-            unit="nm",
-            factor=1e6),
+            unit="mm",
+            factor=1),
         caxis=xrtplot.XYCAxis(
             label=r"energy",
             unit=r"eV"),
         aspect=r"auto",
         title=r"Focus")
     plots.append(Focus)
-
+    
     return plots
 
 

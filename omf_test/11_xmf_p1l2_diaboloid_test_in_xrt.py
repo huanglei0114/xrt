@@ -59,6 +59,18 @@ def build_beamline():
         q_s=m1_q_s,
         )
     
+    beamLine.mirror_ellipsoid_xmf = roes.ConcaveEllipsoidalMirrorXMF(
+        bl=beamLine,
+        name=None,
+        center=[0, 0, 0],
+        pitch=m1_theta,
+        extraPitch=-m1_theta,
+        limPhysX=[-10.0, 10.0],
+        limPhysY=[-500.0, 500.0],
+        p=m1_p,
+        q=m1_q_t,
+        )
+    
     beamLine.mirror = beamLine.mirror_xmf
 
     beamLine.screen = rscreens.Screen(
