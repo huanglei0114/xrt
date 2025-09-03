@@ -20,8 +20,8 @@ import xrtCodeForLei as roes_joe
 
 
 m1_theta = 30e-3
-m1_p = 5000
-m1_q = 1000
+m1_p = 50_000
+m1_q = 5_000
 source_y = - m1_p * np.cos(m1_theta)
 source_z = m1_p * np.sin(m1_theta)
 
@@ -31,8 +31,8 @@ scr_z = m1_q * np.sin(m1_theta)
 src_dx = 212e-6
 src_dz = 212e-6
 
-src_dxprime = 2e-3
-src_dzprime = 2e-3
+src_dxprime = 0.2e-3
+src_dzprime = 0.2e-3
 
 def build_beamline():
     beamLine = raycing.BeamLine()

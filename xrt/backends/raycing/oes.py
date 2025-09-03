@@ -1666,31 +1666,14 @@ class ConvexHyperbolicCylindricalMirrorXMF(OE):
        """
        kwargs = self.__pop_kwargs(**kwargs)
        OE.__init__(self, *args, **kwargs)
-       self.theta = self.pitch # LH-2025-08-25
-    #    self.get_orientation()
 
    def __pop_kwargs(self, **kwargs):
        self.p = kwargs.pop('p')
        self.q = kwargs.pop('q')
+       self.theta = kwargs.pop('theta')
        self.isCylindrical = kwargs.pop('isCylindrical', True)  # always!
        self.pcorrected = 0
        return kwargs
-
-#    def get_orientation(self):
-#        if self.pcorrected and self.pitch0 != self.pitch:
-#            self.pcorrected = 0
-#        if not self.pcorrected:
-#            self.gamma = np.pi - 2*self.pitch
-#            self.ce = 0.5 * np.sqrt(
-#                self.p**2 + self.q**2 - 2*self.p*self.q * np.cos(self.gamma))
-#            self.ae = 0.5 * (self.p+self.q)
-#            self.be = np.sqrt(self.ae*self.ae - self.ce*self.ce)
-#            self.alpha = np.arccos((4 * self.ce**2 - self.q**2 + self.p**2) /
-#                                   (4*self.ce*self.p))
-#            self.delta = 0.5*np.pi - self.alpha - 0.5*self.gamma
-#            self.pitch = self.pitch - self.delta
-#            self.pitch0 = self.pitch
-#            self.pcorrected = 1
 
    def local_z(self, x, y):
        x_xmf = y*1e-3
@@ -2223,11 +2206,11 @@ class ConcaveEllipsoidalMirrorXMF(OE):
        """
        kwargs = self.__pop_kwargs(**kwargs)
        OE.__init__(self, *args, **kwargs)
-       self.theta = self.pitch # LH-2025-08-25
 
    def __pop_kwargs(self, **kwargs):
        self.p = kwargs.pop('p')
        self.q = kwargs.pop('q')
+       self.theta = kwargs.pop('theta')
        self.isCylindrical = kwargs.pop('isCylindrical', False)  # always!
        self.pcorrected = 0
        return kwargs
