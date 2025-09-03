@@ -5098,6 +5098,10 @@ def standard_quadrics_height(x2d: np.ndarray,
         dC_dy = 2*(p+q)**2*y2d
         
         # Surface normal
+        print(f'z2d = {z2d_quad_sln}')
+        print(f'dA_dx = {dA_dx}, dB_dx = {dB_dx}, dC_dx = {dC_dx}')
+        print(f'dA_dy = {dA_dy}, dB_dy = {dB_dy}, dC_dy = {dC_dy}')
+
         df_dx = dA_dx + dB_dx + dC_dx
         df_dy = dA_dy + dB_dy + dC_dy
         df_dz = 2*A*z2d_quad_sln + B
@@ -5805,6 +5809,9 @@ def standard_p1l2_diaboloid_height(x2d: np.ndarray,
     dz2d_dx2d = - concave_ellipsoid_surf_normal[0]/concave_ellipsoid_surf_normal[2]
     dz2d_dy2d = - concave_ellipsoid_surf_normal[1]/concave_ellipsoid_surf_normal[2]
 
+    print(f'dz2d_dx2d = {dz2d_dx2d}')
+    print(f'dz2d_dy2d = {dz2d_dy2d}')
+
     sz = z2d.shape
     max_num_of_iters = 10
     z3d = np.zeros(sz + (max_num_of_iters,))
@@ -5914,6 +5921,9 @@ def standard_p1l2_diaboloid_height(x2d: np.ndarray,
         d_t_dx2d = -dz2d_dx2d * np.sin(theta) - np.cos(theta)
         d_t_dy2d = -dz2d_dy2d * np.sin(theta)
 
+        print(f'd_t_dx2d = {d_t_dx2d}, dz2d_dx2d = {dz2d_dx2d}')
+        print(f'd_t_dy2d = {d_t_dy2d}, dz2d_dy2d = {dz2d_dy2d}')
+
         # Calculate the first derivatives of d_s with respect to x2d and y2d
         # d_s = q_s - z2d * np.sin(theta) - x2d * np.cos(theta)
         # So,
@@ -5992,6 +6002,7 @@ def standard_p1l2_diaboloid_height(x2d: np.ndarray,
         # Total derivatives
         g_mt_dx2d = term1_dx2d + term2_dx2d + term3_dx2d
         g_mt_dy2d = term1_dy2d + term2_dy2d + term3_dy2d
+        print(f'g_mt_dx2d = {g_mt_dx2d}, term1_dx2d = {term1_dx2d}, term2_dx2d = {term2_dx2d}, term3_dx2d = {term3_dx2d}')
 
         # Calculate the first derivatives of A with respect to x2d and y2d
 
@@ -6121,6 +6132,8 @@ def standard_p1l2_diaboloid_height(x2d: np.ndarray,
             # )
             # Let F = y2d ** 2 * d_t ** 2 / d_s ** 2 - y2d ** 2 - 2 * x2d * (p + q_t) * np.cos(theta) + 2 * p * q_mt + q_mt ** 2 + q_t ** 2
             # Compute derivatives of F
+            print(f'd_t_dx2d = {d_t_dx2d}, d_t_dy2d = {d_t_dy2d}')
+            print(f'd_s_dx2d = {d_s_dx2d}, d_s_dy2d = {d_s_dy2d}')
             dF_dx2d = (
                 2 * y2d ** 2 * d_t * d_t_dx2d / d_s ** 2
                 - y2d ** 2 * d_t ** 2 * 2 * d_s * d_s_dx2d / d_s ** 4
@@ -6138,8 +6151,12 @@ def standard_p1l2_diaboloid_height(x2d: np.ndarray,
             )
             dB_dx2d_term3 = -4 * p * np.sin(theta) * dF_dx2d
             dB_dy2d_term3 = -4 * p * np.sin(theta) * dF_dy2d
+            print(f'dF_dx2d = {dF_dx2d}, dF_dy2d = {dF_dy2d}')
 
             # Sum all terms for the derivatives
+            print(f'dB_dx2d_term1 = {dB_dx2d_term1}')
+            print(f'dB_dx2d_term2 = {dB_dx2d_term2}')
+            print(f'dB_dx2d_term3 = {dB_dx2d_term3}')
             dB_dx2d = dB_dx2d_term1 + dB_dx2d_term2 + dB_dx2d_term3
             dB_dy2d = dB_dy2d_term1 + dB_dy2d_term2 + dB_dy2d_term3
 
@@ -6230,6 +6247,11 @@ def standard_p1l2_diaboloid_height(x2d: np.ndarray,
             )
 
         # Surface normal
+        print(f'z2d = {z2d}')
+        print(f'dz2d_dx2d = {dz2d_dx2d}')
+        print(f'dz2d_dy2d = {dz2d_dy2d}')
+        print(f'dA_dx2d = {dA_dx2d}, dB_dx2d = {dB_dx2d}, dC_dx2d = {dC_dx2d}')
+        print(f'dA_dy2d = {dA_dy2d}, dB_dy2d = {dB_dy2d}, dC_dy2d = {dC_dy2d}')
         df_dx = dA_dx2d + dB_dx2d + dC_dx2d
         df_dy = dA_dy2d + dB_dy2d + dC_dy2d
         df_dz = 2*A*z2d_new + B
@@ -6242,8 +6264,14 @@ def standard_p1l2_diaboloid_height(x2d: np.ndarray,
         nz = - df_dz / norm
         surf_normal = [nx, ny, nz]
 
+        dz2d_dx2d_new = - surf_normal[0]/surf_normal[2]
+        dz2d_dy2d_new = - surf_normal[1]/surf_normal[2]
+
         z3d[..., iter_num] = z2d_new
+
         z2d = z2d_new
+        dz2d_dx2d = dz2d_dx2d_new
+        dz2d_dy2d = dz2d_dy2d_new
 
         if iter_num > 0:
             dz2d = z3d[..., iter_num] - z3d[..., iter_num - 1]
