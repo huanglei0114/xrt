@@ -19,6 +19,7 @@ import xrt.runner as xrtrun
 m1_theta = 30e-3
 m1_p = 50_000
 m1_q = 5_000
+
 source_y = - m1_p * np.cos(m1_theta)
 source_z = m1_p * np.sin(m1_theta)
 

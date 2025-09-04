@@ -17,8 +17,9 @@ import xrt.plotter as xrtplot
 import xrt.runner as xrtrun
 
 m1_theta = 30e-3
-m1_p = 5000
-m1_q = 1000
+m1_p = 50_000
+m1_q = 5_000
+
 source_y = - m1_p * np.cos(m1_theta)
 source_z = m1_p * np.sin(m1_theta)
 
@@ -28,8 +29,8 @@ scr_z = m1_q * np.sin(m1_theta)
 src_dx = 212e-6
 src_dz = 212e-6
 
-src_dxprime = 2e-3
-src_dzprime = 2e-3
+src_dxprime = 0.2e-3
+src_dzprime = 0.2e-3
 
 def build_beamline():
     beamLine = raycing.BeamLine()
@@ -48,8 +49,7 @@ def build_beamline():
         bl=beamLine,
         name=None,
         center=[0, 0, 0],
-        pitch=m1_theta,
-        extraPitch=-m1_theta,
+        theta=m1_theta,
         limPhysX=[-10.0, 10.0],
         limPhysY=[-500.0, 500.0],
         p=m1_p,
@@ -82,7 +82,6 @@ def run_process(beamLine):
         'screen01beamLocal01': screen01beamLocal01}
     beamLine.prepare_flow()
     return outDict
-
 
 rrun.run_process = run_process
 

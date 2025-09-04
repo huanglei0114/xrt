@@ -64,7 +64,6 @@ def build_beamline():
         name=None,
         center=[0, 0, 0],
         theta=m1_theta,
-        #extraPitch=-m1_theta,
         limPhysX=[-10.0, 10.0],
         limPhysY=[-500.0, 500.0],
         p=m1_p,
