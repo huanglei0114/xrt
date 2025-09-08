@@ -2421,12 +2421,12 @@ class P1L2DiaboloidalMirrorXMF(OE):
        """
        kwargs = self.__pop_kwargs(**kwargs)
        OE.__init__(self, *args, **kwargs)
-       self.theta = self.pitch # LH-2025-08-25
 
    def __pop_kwargs(self, **kwargs):
        self.p = kwargs.pop('p')
        self.q_t = kwargs.pop('q_t')
        self.q_s = kwargs.pop('q_s')
+       self.theta = kwargs.pop('theta')
        self.isCylindrical = kwargs.pop('isCylindrical', False)  # always!
        self.pcorrected = 0
        return kwargs
@@ -5053,7 +5053,8 @@ def standard_quadrics_height(x2d: np.ndarray,
         df_dx = dA_dx + dB_dx + dC_dx
         df_dy = dA_dy + dB_dy + dC_dy
         df_dz = 2*A*z2d_quad_sln + B
-        
+        print(f'df_dx = {df_dx}, df_dy = {df_dy}, df_dz = {df_dz}')
+
         norm = np.sqrt(df_dx**2 + df_dy**2 + df_dz**2)
         if np.any(norm == 0):
             raise ValueError("The normal vector has zero length, which may indicate a singularity in the surface.")
@@ -5061,7 +5062,10 @@ def standard_quadrics_height(x2d: np.ndarray,
         ny = - df_dy / norm
         nz = - df_dz / norm
         surf_normal = [nx, ny, nz]
-    
+
+        print(f'surf_normal = {surf_normal}')
+        print('---------')
+
         if return_surface_normal_as_extra:
             return (z2d_quad_sln, surf_normal)
         else:
@@ -5757,6 +5761,8 @@ def standard_p1l2_diaboloid_height(x2d: np.ndarray,
     dz2d_dx2d = - concave_ellipsoid_surf_normal[0]/concave_ellipsoid_surf_normal[2]
     dz2d_dy2d = - concave_ellipsoid_surf_normal[1]/concave_ellipsoid_surf_normal[2]
 
+    print('================= Iterative calculation of diaboloid-like surface ================')
+    print(f'concave_ellipsoid_surf_normal = {concave_ellipsoid_surf_normal}')
     print(f'dz2d_dx2d = {dz2d_dx2d}')
     print(f'dz2d_dy2d = {dz2d_dy2d}')
 
@@ -5907,6 +5913,8 @@ def standard_p1l2_diaboloid_height(x2d: np.ndarray,
 
         q_mt_dx2d = (q_t - q_s) * sqrt_term_dx2d
         q_mt_dy2d = (q_t - q_s) * sqrt_term_dy2d
+        print(f'q_mt_dx2d = {q_mt_dx2d}')
+        print(f'q_mt_dy2d = {q_mt_dy2d}')
 
         # Calculate the first derivatives of g_mt with respect to x2d and y2d
         # g_mt = (
@@ -6196,14 +6204,14 @@ def standard_p1l2_diaboloid_height(x2d: np.ndarray,
 
         # Surface normal
         print(f'z2d = {z2d}')
-        print(f'dz2d_dx2d = {dz2d_dx2d}')
-        print(f'dz2d_dy2d = {dz2d_dy2d}')
+
         print(f'dA_dx2d = {dA_dx2d}, dB_dx2d = {dB_dx2d}, dC_dx2d = {dC_dx2d}')
         print(f'dA_dy2d = {dA_dy2d}, dB_dy2d = {dB_dy2d}, dC_dy2d = {dC_dy2d}')
         df_dx = dA_dx2d + dB_dx2d + dC_dx2d
         df_dy = dA_dy2d + dB_dy2d + dC_dy2d
         df_dz = 2*A*z2d_new + B
-        
+        print(f'df_dx = {df_dx}, df_dy = {df_dy}, df_dz = {df_dz}')
+
         norm = np.sqrt(df_dx**2 + df_dy**2 + df_dz**2)
         if np.any(norm == 0):
             raise ValueError("The normal vector has zero length, which may indicate a singularity in the surface.")
@@ -6211,6 +6219,7 @@ def standard_p1l2_diaboloid_height(x2d: np.ndarray,
         ny = - df_dy / norm
         nz = - df_dz / norm
         surf_normal = [nx, ny, nz]
+        print(f'nx = {nx}, ny = {ny}, nz = {nz}')
 
         dz2d_dx2d_new = - surf_normal[0]/surf_normal[2]
         dz2d_dy2d_new = - surf_normal[1]/surf_normal[2]
@@ -6220,6 +6229,9 @@ def standard_p1l2_diaboloid_height(x2d: np.ndarray,
         z2d = z2d_new
         dz2d_dx2d = dz2d_dx2d_new
         dz2d_dy2d = dz2d_dy2d_new
+        print(f'dz2d_dx2d = {dz2d_dx2d}')
+        print(f'dz2d_dy2d = {dz2d_dy2d}')
+        print('=================')
 
         if iter_num > 0:
             dz2d = z3d[..., iter_num] - z3d[..., iter_num - 1]
