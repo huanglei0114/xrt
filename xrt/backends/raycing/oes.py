@@ -5339,7 +5339,12 @@ def standard_quadric_cylinder_height(x: np.ndarray,
         ny = - df_dy / norm
         nz = - df_dz / norm
         surf_normal = [nx, ny, nz]
-    
+        print(f'z = {z_quad_sln}')
+        print(f'dA_dx = {dA_dx}')
+        print(f'dB_dx = {dB_dx}')
+        print(f'dC_dx = {dC_dx}')
+        print(f'surface normal = {surf_normal}')
+
         if return_surface_normal_as_extra:
             return (z_quad_sln, surf_normal)
         else:
@@ -5860,7 +5865,9 @@ def standard_p1l2_diaboloid_height(x2d: np.ndarray,
         discriminant = B ** 2 - 4 * A * C
         z2d_new = (-B - np.sqrt(discriminant)) / (2 * A)
         z2d_new = np.where(np.iscomplex(z2d_new), np.nan, np.real(z2d_new))
-
+        
+        # update z2d
+        z2d = z2d_new
         
 
 
@@ -6031,7 +6038,11 @@ def standard_p1l2_diaboloid_height(x2d: np.ndarray,
             dB0_dx2d = - (dB0_dx2d_term1 + dB0_dx2d_term2)
             dB0_dy2d = - (dB0_dy2d_term1 + dB0_dy2d_term2)
 
-
+            # print(f'dB0_dx2d_term1 = {dB0_dx2d_term1}')
+            # print(f'dB0_dx2d_term2 = {dB0_dx2d_term2}')
+            # print(f'dB0_dy2d_term1 = {dB0_dy2d_term1}')
+            # print(f'dB0_dy2d_term2 = {dB0_dy2d_term2}')
+            
             # C0 = 4 * (p + q_mt) ** 2 * (x2d ** 2 - 2 * x2d * q_t * np.cos(theta) + y2d ** 2 * d_t ** 2 / d_s ** 2 + q_t ** 2)
             #      - (y2d ** 2 * (d_t ** 2 - d_s ** 2) / d_s ** 2 - 2 * x2d * (p + q_t) * np.cos(theta) + 2 * p * q_mt + q_mt ** 2 + q_t ** 2) ** 2
             # First term:
@@ -6126,11 +6137,11 @@ def standard_p1l2_diaboloid_height(x2d: np.ndarray,
             # print(f'dB_dx2d_term2 = {dB_dx2d_term2}')
             # print(f'dB_dx2d_term3 = {dB_dx2d_term3}')
 
-            # print(f'dB_dy2d_term1 = {dB_dy2d_term1}')
-            # print(f'dB_dy2d_term2 = {dB_dy2d_term2}')
-            # print(f'dB_dy2d_term3 = {dB_dy2d_term3}')
-            dB_dx2d = (dB_dx2d_term1 + dB_dx2d_term2 + dB_dx2d_term3)*z2d
-            dB_dy2d = (dB_dy2d_term1 + dB_dy2d_term2 + dB_dy2d_term3)*z2d
+            print(f'dB_dy2d_term1 = {dB_dy2d_term1}')
+            print(f'dB_dy2d_term2 = {dB_dy2d_term2}')
+            print(f'dB_dy2d_term3 = {dB_dy2d_term3}')
+            dB_dx2d = dB_dx2d_term1 + dB_dx2d_term2 + dB_dx2d_term3
+            dB_dy2d = dB_dy2d_term1 + dB_dy2d_term2 + dB_dy2d_term3
 
 
             # Calculate the first derivatives of C with respect to x2d and y2d
@@ -6226,20 +6237,30 @@ def standard_p1l2_diaboloid_height(x2d: np.ndarray,
             # print(f'dC_dx2d_term7 = {dC_dx2d_term7}')
             # print(f'dC_dx2d_term8 = {dC_dx2d_term8}')
 
-            # print(f'dC_dy2d_term1 = {dC_dy2d_term1}')
-            # print(f'dC_dy2d_term2 = {dC_dy2d_term2}')
-            # print(f'dC_dy2d_term3 = {dC_dy2d_term3}')
-            # print(f'dC_dy2d_term4 = {dC_dy2d_term4}')
-            # print(f'dC_dy2d_term5 = {dC_dy2d_term5}')
-            # print(f'dC_dy2d_term6 = {dC_dy2d_term6}')
-            # print(f'dC_dy2d_term7 = {dC_dy2d_term7}')
-            # print(f'dC_dy2d_term8 = {dC_dy2d_term8}')
+            print(f'dC_dy2d_term1 = {dC_dy2d_term1}')
+            print(f'dC_dy2d_term2 = {dC_dy2d_term2}')
+            print(f'dC_dy2d_term3 = {dC_dy2d_term3}')
+            print(f'dC_dy2d_term4 = {dC_dy2d_term4}')
+            print(f'dC_dy2d_term5 = {dC_dy2d_term5}')
+            print(f'dC_dy2d_term6 = {dC_dy2d_term6}')
+            print(f'dC_dy2d_term7 = {dC_dy2d_term7}')
+            print(f'dC_dy2d_term8 = {dC_dy2d_term8}')
 
         # Surface normal
         # print(f'z2d = {z2d}')
 
-        # print(f'dA_dx2d = {dA_dx2d}, dB_dx2d / 4 = {dB_dx2d/4}, dC_dx2d / 4 = {dC_dx2d/4}')
-        # print(f'dA_dy2d = {dA_dy2d}, dB_dy2d / 4 = {dB_dy2d/4}, dC_dy2d / 4 = {dC_dy2d/4}')
+        dA_dx2d = dA_dx2d*z2d**2
+        dA_dy2d = dA_dy2d*z2d**2
+        
+        dB_dx2d = dB_dx2d*z2d
+        dB_dy2d = dB_dy2d*z2d   
+        
+        print(f'dA_dx2d = {dA_dx2d}')
+        print(f'dB_dx2d / 4 = {dB_dx2d/4}')
+        print(f'dC_dx2d / 4 = {dC_dx2d/4}')
+        print(f'dA_dy2d = {dA_dy2d}')
+        print(f'dB_dy2d / 4 = {dB_dy2d/4}')
+        print(f'dC_dy2d / 4 = {dC_dy2d/4}')
         df_dx = dA_dx2d + dB_dx2d + dC_dx2d
         df_dy = dA_dy2d + dB_dy2d + dC_dy2d
         df_dz = 2*A*z2d_new + B
@@ -6259,19 +6280,19 @@ def standard_p1l2_diaboloid_height(x2d: np.ndarray,
 
         z3d[..., iter_num] = z2d_new
 
-        z2d = z2d_new
         dz2d_dx2d = dz2d_dx2d_new
         dz2d_dy2d = dz2d_dy2d_new
-        # print(f'z2d = {z2d}')
+        print(f'z2d = {z2d}')
         # print(f'dz2d_dx2d = {dz2d_dx2d}')
         # print(f'dz2d_dy2d = {dz2d_dy2d}')
-        # print(f'surf_normal = {surf_normal}')
-        # print('=================')
+        print(f'surf_normal = {surf_normal}')
 
         if iter_num > 0:
             dz2d = z3d[..., iter_num] - z3d[..., iter_num - 1]
             rms_dz = np.nanstd(dz2d)
-            if rms_dz < 1e-15:
+            print(f'iter_num = {iter_num}, rms_dz = {rms_dz}')
+            print('=================')
+            if rms_dz < 1e-30:
                 z3d = z3d[..., : iter_num + 1]
                 break
 
