@@ -17,8 +17,8 @@ import xrt.plotter as xrtplot
 import xrt.runner as xrtrun
 
 m1_p = 50_000
-m1_q_t = 50_000
-m1_q_s = 50_000*1e30
+m1_q_t = 5_000
+m1_q_s = -50_000
 
 src_dxprime = 4e-4
 src_dzprime = 1e-4
@@ -84,6 +84,17 @@ def build_beamline():
         q=m1_q_t,
         )
     
+    beamLine.mirror_ellipse_xmf = roes.ConcaveEllipticCylindricalMirrorXMF(
+        bl=beamLine,
+        name=None,
+        center=[0, 0, 0],
+        theta=m1_theta,
+        limPhysX=[-25.0, 25.0],
+        limPhysY=[-175.0, 175.0],
+        p=m1_p,
+        q=m1_q_t,
+        )
+        
     beamLine.mirror = beamLine.mirror_xmf
     # beamLine.mirror = beamLine.mirror_ellipsoid_xmf
 
