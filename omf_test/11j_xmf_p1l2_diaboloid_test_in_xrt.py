@@ -16,11 +16,21 @@ import xrt.backends.raycing as raycing
 import xrt.plotter as xrtplot
 import xrt.runner as xrtrun
 
-
-m1_theta = 30e-3
 m1_p = 50_000
-m1_q_t = 5_000
-m1_q_s = 15_000
+m1_q_t = 50_000
+m1_q_s = 50_000*1e30
+
+src_dxprime = 4e-4
+src_dzprime = 1e-4
+
+src_dx = 212e-6*1e-6
+src_dz = 212e-6*1e-6
+
+
+m1_theta = 2/180*np.pi
+# m1_p = 1800
+# m1_q_t = 6200
+# m1_q_s = 10000
 source_y = - m1_p * np.cos(m1_theta)
 source_z = m1_p * np.sin(m1_theta)
 
@@ -30,11 +40,13 @@ scr_t_z = m1_q_t * np.sin(m1_theta)
 scr_s_y = m1_q_s * np.cos(m1_theta)
 scr_s_z = m1_q_s * np.sin(m1_theta)
 
-src_dx = 212e-6
-src_dz = 212e-6
+# src_dx = 212e-6*1e-6
+# src_dz = 212e-6*1e-6
 
-src_dxprime = 0.2e-3
-src_dzprime = 0.2e-3
+# src_dxprime = 8e-3
+# src_dzprime = 2e-3
+
+
 
 def build_beamline():
     beamLine = raycing.BeamLine()
@@ -54,8 +66,8 @@ def build_beamline():
         name=None,
         center=[0, 0, 0],
         theta=m1_theta,
-        limPhysX=[-10.0, 10.0],
-        limPhysY=[-500.0, 500.0],
+        limPhysX=[-25.0, 25.0],
+        limPhysY=[-175.0, 175.0],
         p=m1_p,
         q_t=m1_q_t,
         q_s=m1_q_s,
@@ -66,8 +78,8 @@ def build_beamline():
         name=None,
         center=[0, 0, 0],
         theta=m1_theta,
-        limPhysX=[-10.0, 10.0],
-        limPhysY=[-500.0, 500.0],
+        limPhysX=[-25.0, 25.0],
+        limPhysY=[-175.0, 175.0],
         p=m1_p,
         q=m1_q_t,
         )
@@ -124,17 +136,17 @@ def define_plots():
         beam=r"geometricSource01beamGlobal01",
         xaxis=xrtplot.XYCAxis(
             label=r"x",
-            fwhmFormatStr=r"%.6f",
-            limits=[-1e-3, 1e-3],
-            unit="mm",
-            factor=1),
+            fwhmFormatStr=r"%.3f",
+            limits=[-1, 1],
+            unit="pm",
+            factor=1e9),
         yaxis=xrtplot.XYCAxis(
             label=r"z",
-            fwhmFormatStr=r"%.6f",
-            limits=[source_z-1e-3, source_z+1e-3],
-            offset=source_z,
-            unit="mm",
-            factor=1),
+            fwhmFormatStr=r"%.3f",
+            limits=[source_z*1e9-1, source_z*1e9+1],
+            offset=source_z*1e9,
+            unit="pm",
+            factor=1e9),
         caxis=xrtplot.XYCAxis(
             label=r"energy",
             unit=r"eV"),
@@ -161,16 +173,16 @@ def define_plots():
         beam=r"screen_t_beamLocal01",
         xaxis=xrtplot.XYCAxis(
             label=r"x",
-            fwhmFormatStr=r"%.1f",
+            fwhmFormatStr=r"%.3f",
             # limits=[-200, 200],
-            unit="nm",
-            factor=1e6),
+            unit="pm",
+            factor=1e9),
         yaxis=xrtplot.XYCAxis(
             label=r"z",
-            fwhmFormatStr=r"%.1f",
+            fwhmFormatStr=r"%.3f",
             # limits=[-200, 200],
-            unit="nm",
-            factor=1e6),
+            unit="pm",
+            factor=1e9),
         caxis=xrtplot.XYCAxis(
             label=r"energy",
             unit=r"eV"),
@@ -182,16 +194,16 @@ def define_plots():
         beam=r"screen_s_beamLocal01",
         xaxis=xrtplot.XYCAxis(
             label=r"x",
-            fwhmFormatStr=r"%.1f",
+            fwhmFormatStr=r"%.3f",
             # limits=[-200, 200],
-            unit="nm",
-            factor=1e6),
+            unit="pm",
+            factor=1e9),
         yaxis=xrtplot.XYCAxis(
             label=r"z",
-            fwhmFormatStr=r"%.1f",
+            fwhmFormatStr=r"%.3f",
             # limits=[-200, 200],
-            unit="nm",
-            factor=1e6),
+            unit="pm",
+            factor=1e9),
         caxis=xrtplot.XYCAxis(
             label=r"energy",
             unit=r"eV"),
