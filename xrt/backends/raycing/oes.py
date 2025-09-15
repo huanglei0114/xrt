@@ -6395,7 +6395,7 @@ def standard_p1l2_diaboloid_height(x2d: np.ndarray,
             dG1_dy2d = 4 * y2d
             H1 = q_mt ** 2 + q_t ** 2 - 2 * x2d * np.cos(theta) * q_t + 2 * p * q_mt - 2 * p * x2d * np.cos(theta) - 0.5 * y2d ** 2
             dH1_dx2d = 2 * q_mt * q_mt_dx2d - 2 * np.cos(theta) * q_t + 2 * p * q_mt_dx2d - 2 * p * np.cos(theta)
-            # dH1_dy2d = 2 * q_mt * q_mt_dy2d - y2d # <-- this wrong!
+            # dH1_dy2d = 2 * q_mt * q_mt_dy2d - y2d # <-- this is wrong!
             dH1_dy2d = 2 * q_mt * q_mt_dy2d + 2 * p * q_mt_dy2d - y2d
             dC_dx2d_term7 = dG1_dx2d * H1 + G1 * dH1_dx2d
             dC_dy2d_term7 = dG1_dy2d * H1 + G1 * dH1_dy2d
