@@ -16,21 +16,27 @@ import xrt.backends.raycing as raycing
 import xrt.plotter as xrtplot
 import xrt.runner as xrtrun
 
+m1_theta = 2/180*np.pi
+
 m1_p = 50_000
 m1_q_t = 5_000
 m1_q_s = -50_000
-
 src_dxprime = 4e-4
 src_dzprime = 1e-4
-
 src_dx = 212e-6*1e-6
 src_dz = 212e-6*1e-6
 
 
-m1_theta = 2/180*np.pi
+
 # m1_p = 1800
 # m1_q_t = 6200
 # m1_q_s = 10000
+# src_dxprime = 8e-3
+# src_dzprime = 2e-3
+# src_dx = 212e-6*1e-6
+# src_dz = 212e-6*1e-6
+
+
 source_y = - m1_p * np.cos(m1_theta)
 source_z = m1_p * np.sin(m1_theta)
 
@@ -40,11 +46,7 @@ scr_t_z = m1_q_t * np.sin(m1_theta)
 scr_s_y = m1_q_s * np.cos(m1_theta)
 scr_s_z = m1_q_s * np.sin(m1_theta)
 
-# src_dx = 212e-6*1e-6
-# src_dz = 212e-6*1e-6
 
-# src_dxprime = 8e-3
-# src_dzprime = 2e-3
 
 
 
