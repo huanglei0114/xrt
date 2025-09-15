@@ -5762,7 +5762,7 @@ def standard_p1l2_diaboloid_height(x2d: np.ndarray,
         z-coordinates history in iterations
     """
 
-    q = 2 / (1 / q_t + 1 / q_s)
+    q = 2 / (1 / abs(q_t) + 1 / abs(q_s))
     z2d, concave_ellipsoid_surf_normal = standard_concave_ellipsoid_height(x2d, y2d, p, q, theta, return_surface_normal_as_extra=True)
     dz2d_dx2d = - concave_ellipsoid_surf_normal[0]/concave_ellipsoid_surf_normal[2]
     dz2d_dy2d = - concave_ellipsoid_surf_normal[1]/concave_ellipsoid_surf_normal[2]
