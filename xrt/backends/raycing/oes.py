@@ -154,6 +154,7 @@ from . import stages as rst
 from . import sources as rs
 from .physconsts import CH
 from .oes_base import OE, DCM, allArguments
+import sympy as sp
 
 # try:
 #     import pyopencl as cl  # analysis:ignore
@@ -5761,7 +5762,7 @@ def standard_p1l2_diaboloid_height(x2d: np.ndarray,
         z-coordinates history in iterations
     """
 
-    q = 2 / (1 / q_t + 1 / q_s)
+    q = 2 / (1 / abs(q_t) + 1 / abs(q_s))
     z2d, concave_ellipsoid_surf_normal = standard_concave_ellipsoid_height(x2d, y2d, p, q, theta, return_surface_normal_as_extra=True)
     dz2d_dx2d = - concave_ellipsoid_surf_normal[0]/concave_ellipsoid_surf_normal[2]
     dz2d_dy2d = - concave_ellipsoid_surf_normal[1]/concave_ellipsoid_surf_normal[2]
@@ -5870,6 +5871,183 @@ def standard_p1l2_diaboloid_height(x2d: np.ndarray,
         z2d = z2d_new
         
 
+        # # Symbolic check of derivatives using sympy
+
+        # # Define symbols
+        # x2d_sym, y2d_sym, z2d_sym = sp.symbols('x2d y2d z2d')
+        # p_sym, q_t_sym, q_s_sym, theta_sym = sp.symbols('p q_t q_s theta')
+        # dz2d_dx2d_sym = sp.Function('dz2d_dx2d')(x2d_sym, y2d_sym)
+        # dz2d_dy2d_sym = sp.Function('dz2d_dy2d')(x2d_sym, y2d_sym)
+
+        # # Define d_t and d_s as functions of x2d, y2d, z2d
+        # d_t_sym = q_t_sym - z2d_sym * sp.sin(theta_sym) - x2d_sym * sp.cos(theta_sym)
+        # d_s_sym = q_s_sym - z2d_sym * sp.sin(theta_sym) - x2d_sym * sp.cos(theta_sym)
+
+        # # sqrt_term
+        # sqrt_term_sym = sp.sqrt(1 + y2d_sym**2 / d_s_sym**2)
+        # q_mt_sym = q_t_sym * sqrt_term_sym + q_s_sym * (1 - sqrt_term_sym)
+
+        # # g_mt
+        # zxs = z2d_sym * sp.sin(theta_sym) + x2d_sym * sp.cos(theta_sym)
+        # g_mt_sym = (
+        #     (2 * q_t_sym * zxs - zxs**2) * y2d_sym**2 / d_s_sym**2
+        #     + 2 * q_t_sym * sqrt_term_sym * q_s_sym * (1 - sqrt_term_sym)
+        #     + q_s_sym**2 * (1 - sqrt_term_sym)**2
+        # )
+
+        # # Compute total derivatives using chain rule
+        # dq_mt_dx2d_sym = sp.diff(q_mt_sym, x2d_sym) + sp.diff(q_mt_sym, z2d_sym) * dz2d_dx2d_sym
+        # dq_mt_dy2d_sym = sp.diff(q_mt_sym, y2d_sym) + sp.diff(q_mt_sym, z2d_sym) * dz2d_dy2d_sym
+
+        # # Compute total derivatives using chain rule
+        # dg_mt_dx2d_sym = sp.diff(g_mt_sym, x2d_sym) + sp.diff(g_mt_sym, z2d_sym) * dz2d_dx2d_sym
+        # dg_mt_dy2d_sym = sp.diff(g_mt_sym, y2d_sym) + sp.diff(g_mt_sym, z2d_sym) * dz2d_dy2d_sym
+
+        # # A, B, C
+        # A_sym = 4 * (p_sym + q_mt_sym)**2 - 4 * (p_sym - q_t_sym)**2 * sp.sin(theta_sym)**2
+        # B_sym = (
+        #     -8 * (p_sym**2 + 2 * p_sym * q_mt_sym) * q_t_sym * sp.sin(theta_sym)
+        #     - 4 * q_t_sym * sp.sin(theta_sym) * (g_mt_sym + 2 * x2d_sym * (p_sym + q_t_sym) * sp.cos(theta_sym) - 2 * p_sym * q_mt_sym + y2d_sym**2)
+        #     - 4 * p_sym * sp.sin(theta_sym) * (
+        #         y2d_sym**2 * d_t_sym**2 / d_s_sym**2
+        #         - y2d_sym**2
+        #         - 2 * x2d_sym * (p_sym + q_t_sym) * sp.cos(theta_sym)
+        #         + 2 * p_sym * q_mt_sym
+        #         + q_mt_sym**2
+        #         + q_t_sym**2
+        #     )
+        # )
+
+        # C_sym = (
+        #     -g_mt_sym ** 2
+        #     - (4 * x2d_sym * sp.cos(theta_sym) * q_t_sym + 4 * p_sym * q_mt_sym + 4 * p_sym ** 2) * g_mt_sym
+        #     + (4 * x2d_sym ** 2 * sp.cos(theta_sym) ** 2) * (q_mt_sym ** 2 - q_t_sym ** 2)
+        #     + (2 * y2d_sym ** 2 + 4 * p_sym * x2d_sym * sp.cos(theta_sym)) * (y2d_sym ** 2 * d_t_sym ** 2 / d_s_sym ** 2)
+        #     + 4 * p_sym * x2d_sym * sp.cos(theta_sym) * (q_mt_sym - q_t_sym) ** 2
+        #     + 8 * p_sym * x2d_sym * sp.cos(theta_sym) * (p_sym + x2d_sym * sp.cos(theta_sym)) * (q_mt_sym - q_t_sym)
+        #     + (2 * y2d_sym ** 2) * (q_mt_sym ** 2 + q_t_sym ** 2 - 2 * x2d_sym * sp.cos(theta_sym) * q_t_sym + 2 * p_sym * q_mt_sym - 2 * p_sym * x2d_sym * sp.cos(theta_sym) - 0.5 * y2d_sym ** 2)
+        #     + 4 * (p_sym + q_mt_sym) ** 2 * x2d_sym ** 2 * sp.sin(theta_sym) ** 2
+        # )
+
+        # # Assume z2d is a function of x2d and y2d
+        # # Compute total derivatives using chain rule
+        # dA_dx2d_sym = sp.diff(A_sym, x2d_sym)# + sp.diff(A_sym, z2d_sym) * dz2d_dx2d_sym
+        # dA_dy2d_sym = sp.diff(A_sym, y2d_sym)# + sp.diff(A_sym, z2d_sym) * dz2d_dy2d_sym
+
+        # dB_dx2d_sym = sp.diff(B_sym, x2d_sym)# + sp.diff(B_sym, z2d_sym) * dz2d_dx2d_sym
+        # dB_dy2d_sym = sp.diff(B_sym, y2d_sym)# + sp.diff(B_sym, z2d_sym) * dz2d_dy2d_sym
+
+        # dC_dx2d_sym = sp.diff(C_sym, x2d_sym)# + sp.diff(C_sym, z2d_sym) * dz2d_dx2d_sym
+        # dC_dy2d_sym = sp.diff(C_sym, y2d_sym)# + sp.diff(C_sym, z2d_sym) * dz2d_dy2d_sym
+        
+        # # Print the symbolic derivatives for inspection
+        # print("dA/dx2d =", dA_dx2d_sym)
+        # print("dA/dy2d =", dA_dy2d_sym)
+        # # print("dB/dx2d =", dB_dx2d_sym)
+        # # print("dB/dy2d =", dB_dy2d_sym)
+        # # print("dC/dx2d =", dC_dx2d_sym)
+        # # print("dC/dy2d =", dC_dy2d_sym)
+
+        # # Evaluate symbolic derivatives numerically at the current values
+        # # Prepare a dictionary of current values for substitution
+        # subs_dict = {
+        #     x2d_sym: x2d,
+        #     y2d_sym: y2d,
+        #     z2d_sym: z2d,
+        #     p_sym: p,
+        #     q_t_sym: q_t,
+        #     q_s_sym: q_s,
+        #     theta_sym: theta,
+        #     dz2d_dx2d_sym: dz2d_dx2d,
+        #     dz2d_dy2d_sym: dz2d_dy2d,
+        # }
+
+        # # Lambdify the symbolic derivatives for numerical evaluation
+        # dq_mt_dx2d_func = sp.lambdify((x2d_sym, y2d_sym, z2d_sym, p_sym, q_t_sym, q_s_sym, theta_sym, dz2d_dx2d_sym, dz2d_dy2d_sym), dq_mt_dx2d_sym, "numpy")
+        # dq_mt_dy2d_func = sp.lambdify((x2d_sym, y2d_sym, z2d_sym, p_sym, q_t_sym, q_s_sym, theta_sym, dz2d_dx2d_sym, dz2d_dy2d_sym), dq_mt_dy2d_sym, "numpy")
+        # dg_mt_dx2d_func = sp.lambdify((x2d_sym, y2d_sym, z2d_sym, p_sym, q_t_sym, q_s_sym, theta_sym, dz2d_dx2d_sym, dz2d_dy2d_sym), dg_mt_dx2d_sym, "numpy")
+        # dg_mt_dy2d_func = sp.lambdify((x2d_sym, y2d_sym, z2d_sym, p_sym, q_t_sym, q_s_sym, theta_sym, dz2d_dx2d_sym, dz2d_dy2d_sym), dg_mt_dy2d_sym, "numpy")
+        # dA_dx2d_func = sp.lambdify((x2d_sym, y2d_sym, z2d_sym, p_sym, q_t_sym, q_s_sym, theta_sym, dz2d_dx2d_sym, dz2d_dy2d_sym), dA_dx2d_sym, "numpy")
+        # dA_dy2d_func = sp.lambdify((x2d_sym, y2d_sym, z2d_sym, p_sym, q_t_sym, q_s_sym, theta_sym, dz2d_dx2d_sym, dz2d_dy2d_sym), dA_dy2d_sym, "numpy")
+        # dB_dx2d_func = sp.lambdify((x2d_sym, y2d_sym, z2d_sym, p_sym, q_t_sym, q_s_sym, theta_sym, dz2d_dx2d_sym, dz2d_dy2d_sym), dB_dx2d_sym, "numpy")
+        # dB_dy2d_func = sp.lambdify((x2d_sym, y2d_sym, z2d_sym, p_sym, q_t_sym, q_s_sym, theta_sym, dz2d_dx2d_sym, dz2d_dy2d_sym), dB_dy2d_sym, "numpy")
+        # dC_dx2d_func = sp.lambdify((x2d_sym, y2d_sym, z2d_sym, p_sym, q_t_sym, q_s_sym, theta_sym, dz2d_dx2d_sym, dz2d_dy2d_sym), dC_dx2d_sym, "numpy")
+        # dC_dy2d_func = sp.lambdify((x2d_sym, y2d_sym, z2d_sym, p_sym, q_t_sym, q_s_sym, theta_sym, dz2d_dx2d_sym, dz2d_dy2d_sym), dC_dy2d_sym, "numpy")
+
+        # # Compute the numerical values
+        # dq_mt_dx2d_num = dq_mt_dx2d_func(x2d, y2d, z2d, p, q_t, q_s, theta, dz2d_dx2d, dz2d_dy2d)
+        # dq_mt_dy2d_num = dq_mt_dy2d_func(x2d, y2d, z2d, p, q_t, q_s, theta, dz2d_dx2d, dz2d_dy2d)
+        # dg_mt_dx2d_num = dg_mt_dx2d_func(x2d, y2d, z2d, p, q_t, q_s, theta, dz2d_dx2d, dz2d_dy2d)
+        # dg_mt_dy2d_num = dg_mt_dy2d_func(x2d, y2d, z2d, p, q_t, q_s, theta, dz2d_dx2d, dz2d_dy2d)
+        # dA_dx2d_num = dA_dx2d_func(x2d, y2d, z2d, p, q_t, q_s, theta, dz2d_dx2d, dz2d_dy2d)
+        # dA_dy2d_num = dA_dy2d_func(x2d, y2d, z2d, p, q_t, q_s, theta, dz2d_dx2d, dz2d_dy2d)
+        # dB_dx2d_num = dB_dx2d_func(x2d, y2d, z2d, p, q_t, q_s, theta, dz2d_dx2d, dz2d_dy2d)
+        # dB_dy2d_num = dB_dy2d_func(x2d, y2d, z2d, p, q_t, q_s, theta, dz2d_dx2d, dz2d_dy2d)
+        # dC_dx2d_num = dC_dx2d_func(x2d, y2d, z2d, p, q_t, q_s, theta, dz2d_dx2d, dz2d_dy2d)
+        # dC_dy2d_num = dC_dy2d_func(x2d, y2d, z2d, p, q_t, q_s, theta, dz2d_dx2d, dz2d_dy2d)
+
+        # print("Numerical dq_mt_dx2d =", dq_mt_dx2d_num)
+        # print("Numerical dq_mt_dy2d =", dq_mt_dy2d_num)
+        # print("Numerical dg_mt_dx2d =", dg_mt_dx2d_num)
+        # print("Numerical dg_mt_dy2d =", dg_mt_dy2d_num)
+        # print("Numerical dA_dx2d =", dA_dx2d_num)
+        # print("Numerical dA_dy2d =", dA_dy2d_num)
+        # print("Numerical dB_dx2d =", dB_dx2d_num)
+        # print("Numerical dB_dy2d =", dB_dy2d_num)
+        # print("Numerical dC_dx2d =", dC_dx2d_num)
+        # print("Numerical dC_dy2d =", dC_dy2d_num)
+
+
+        # T1_sym = -g_mt_sym ** 2
+        # T2_sym = - (4 * x2d_sym * sp.cos(theta_sym) * q_t_sym + 4 * p_sym * q_mt_sym + 4 * p_sym ** 2) * g_mt_sym
+        # T3_sym = + (4 * x2d_sym ** 2 * sp.cos(theta_sym) ** 2) * (q_mt_sym ** 2 - q_t_sym ** 2)
+        # T4_sym = + (2 * y2d_sym ** 2 + 4 * p_sym * x2d_sym * sp.cos(theta_sym)) * (y2d_sym ** 2 * d_t_sym ** 2 / d_s_sym ** 2)
+        # T5_sym = 4 * p_sym * x2d_sym * sp.cos(theta_sym) * (q_mt_sym - q_t_sym) ** 2
+        # T6_sym = 8 * p_sym * x2d_sym * sp.cos(theta_sym) * (p_sym + x2d_sym * sp.cos(theta_sym)) * (q_mt_sym - q_t_sym)
+        # T7_sym = + (2 * y2d_sym ** 2) * (q_mt_sym ** 2 + q_t_sym ** 2 - 2 * x2d_sym * sp.cos(theta_sym) * q_t_sym + 2 * p_sym * q_mt_sym - 2 * p_sym * x2d_sym * sp.cos(theta_sym) - 0.5 * y2d_sym ** 2)
+        # T8_sym = 4 * (p_sym + q_mt_sym) ** 2 * x2d_sym ** 2 * sp.sin(theta_sym) ** 2
+
+        
+
+        # dT1_dy2d_sym = sp.diff(T1_sym, y2d_sym) + sp.diff(T1_sym, z2d_sym) * dz2d_dy2d_sym
+        # dT2_dy2d_sym = sp.diff(T2_sym, y2d_sym) + sp.diff(T2_sym, z2d_sym) * dz2d_dy2d_sym
+        # dT3_dy2d_sym = sp.diff(T3_sym, y2d_sym) + sp.diff(T3_sym, z2d_sym) * dz2d_dy2d_sym
+        # dT4_dy2d_sym = sp.diff(T4_sym, y2d_sym) + sp.diff(T4_sym, z2d_sym) * dz2d_dy2d_sym
+        # dT5_dy2d_sym = sp.diff(T5_sym, y2d_sym) + sp.diff(T5_sym, z2d_sym) * dz2d_dy2d_sym
+        # dT6_dy2d_sym = sp.diff(T6_sym, y2d_sym) + sp.diff(T6_sym, z2d_sym) * dz2d_dy2d_sym
+        # dT7_dy2d_sym = sp.diff(T7_sym, y2d_sym) + sp.diff(T7_sym, z2d_sym) * dz2d_dy2d_sym
+        # dT8_dy2d_sym = sp.diff(T8_sym, y2d_sym) + sp.diff(T8_sym, z2d_sym) * dz2d_dy2d_sym
+       
+
+        # dT1_dy2d_func = sp.lambdify((x2d_sym, y2d_sym, z2d_sym, p_sym, q_t_sym, q_s_sym, theta_sym, dz2d_dx2d_sym, dz2d_dy2d_sym), dT1_dy2d_sym, "numpy")
+        # dT2_dy2d_func = sp.lambdify((x2d_sym, y2d_sym, z2d_sym, p_sym, q_t_sym, q_s_sym, theta_sym, dz2d_dx2d_sym, dz2d_dy2d_sym), dT2_dy2d_sym, "numpy")
+        # dT3_dy2d_func = sp.lambdify((x2d_sym, y2d_sym, z2d_sym, p_sym, q_t_sym, q_s_sym, theta_sym, dz2d_dx2d_sym, dz2d_dy2d_sym), dT3_dy2d_sym, "numpy")
+        # dT4_dy2d_func = sp.lambdify((x2d_sym, y2d_sym, z2d_sym, p_sym, q_t_sym, q_s_sym, theta_sym, dz2d_dx2d_sym, dz2d_dy2d_sym), dT4_dy2d_sym, "numpy")
+        # dT5_dy2d_func = sp.lambdify((x2d_sym, y2d_sym, z2d_sym, p_sym, q_t_sym, q_s_sym, theta_sym, dz2d_dx2d_sym, dz2d_dy2d_sym), dT5_dy2d_sym, "numpy")
+        # dT6_dy2d_func = sp.lambdify((x2d_sym, y2d_sym, z2d_sym, p_sym, q_t_sym, q_s_sym, theta_sym, dz2d_dx2d_sym, dz2d_dy2d_sym), dT6_dy2d_sym, "numpy")
+        # dT7_dy2d_func = sp.lambdify((x2d_sym, y2d_sym, z2d_sym, p_sym, q_t_sym, q_s_sym, theta_sym, dz2d_dx2d_sym, dz2d_dy2d_sym), dT7_dy2d_sym, "numpy")
+        # dT8_dy2d_func = sp.lambdify((x2d_sym, y2d_sym, z2d_sym, p_sym, q_t_sym, q_s_sym, theta_sym, dz2d_dx2d_sym, dz2d_dy2d_sym), dT8_dy2d_sym, "numpy")
+
+        # dT1_dy2d_num = dT1_dy2d_func(x2d, y2d, z2d, p, q_t, q_s, theta, dz2d_dx2d, dz2d_dy2d)
+        # dT2_dy2d_num = dT2_dy2d_func(x2d, y2d, z2d, p, q_t, q_s, theta, dz2d_dx2d, dz2d_dy2d)
+        # dT3_dy2d_num = dT3_dy2d_func(x2d, y2d, z2d, p, q_t, q_s, theta, dz2d_dx2d, dz2d_dy2d)
+        # dT4_dy2d_num = dT4_dy2d_func(x2d, y2d, z2d, p, q_t, q_s, theta, dz2d_dx2d, dz2d_dy2d)
+        # dT5_dy2d_num = dT5_dy2d_func(x2d, y2d, z2d, p, q_t, q_s, theta, dz2d_dx2d, dz2d_dy2d)
+        # dT6_dy2d_num = dT6_dy2d_func(x2d, y2d, z2d, p, q_t, q_s, theta, dz2d_dx2d, dz2d_dy2d)
+        # dT7_dy2d_num = dT7_dy2d_func(x2d, y2d, z2d, p, q_t, q_s, theta, dz2d_dx2d, dz2d_dy2d)
+        # dT8_dy2d_num = dT8_dy2d_func(x2d, y2d, z2d, p, q_t, q_s, theta, dz2d_dx2d, dz2d_dy2d)
+
+        # print("Numerical dT1_dy2d =", dT1_dy2d_num)
+        # print("Numerical dT2_dy2d =", dT2_dy2d_num)
+        # print("Numerical dT3_dy2d =", dT3_dy2d_num)
+        # print("Numerical dT4_dy2d =", dT4_dy2d_num)
+        # print("Numerical dT5_dy2d =", dT5_dy2d_num)
+        # print("Numerical dT6_dy2d =", dT6_dy2d_num)
+        # print("Numerical dT7_dy2d =", dT7_dy2d_num)
+        # print("Numerical dT8_dy2d =", dT8_dy2d_num)
+
+        # print("Numerical total 7 =", dT1_dy2d_num + dT2_dy2d_num + dT3_dy2d_num + dT4_dy2d_num + dT5_dy2d_num + dT6_dy2d_num + dT7_dy2d_num)
+        # print("Numerical total =", dT1_dy2d_num + dT2_dy2d_num + dT3_dy2d_num + dT4_dy2d_num + dT5_dy2d_num + dT6_dy2d_num + dT7_dy2d_num + dT8_dy2d_num)
 
         # Calculate the first derivatives with respect to x2d and y2d, respectively
         
@@ -5909,6 +6087,15 @@ def standard_p1l2_diaboloid_height(x2d: np.ndarray,
 
         sqrt_term_dx2d = 0.5 * u**(-0.5) * u_dx2d
         sqrt_term_dy2d = 0.5 * u**(-0.5) * u_dy2d
+
+        # sqrt_term_dx2d_from_sym = dz2d_dx2d*y2d**2*np.sin(theta)/(np.sqrt(y2d**2/(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2 + 1)*(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**3) + y2d**2*np.cos(theta)/(np.sqrt(y2d**2/(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2 + 1)*(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**3)
+        # sqrt_term_dy2d_from_sym = dz2d_dy2d*y2d**2*np.sin(theta)/(np.sqrt(y2d**2/(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2 + 1)*(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**3) + y2d/(np.sqrt(y2d**2/(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2 + 1)*(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2)
+
+        # print(f"sqrt_term_dx2d: {sqrt_term_dx2d}")
+        # print(f"sqrt_term_dy2d: {sqrt_term_dy2d}")
+
+        # print(f"Sympy total sqrt_term/dx2d: {sqrt_term_dx2d_from_sym}")
+        # print(f"Sympy total sqrt_term/dy2d: {sqrt_term_dy2d_from_sym}")
 
         # Calculate the first derivatives of q_mt with respect to x2d and y2d
         # q_mt = q_t * sqrt_term + q_s * (1 - sqrt_term)
@@ -5979,8 +6166,8 @@ def standard_p1l2_diaboloid_height(x2d: np.ndarray,
 
         # A = 4 * (p + q_mt) ** 2 - 4 * (p - q_t) ** 2 * np.sin(theta) ** 2
         # Only q_mt depends on x2d and y2d
-        dA_dx2d = (8 * (p + q_mt) * q_mt_dx2d)*z2d**2
-        dA_dy2d = (8 * (p + q_mt) * q_mt_dy2d)*z2d**2
+        dA_dx2d = (8 * (p + q_mt) * q_mt_dx2d)
+        dA_dy2d = (8 * (p + q_mt) * q_mt_dy2d)
 
         if q_s == -p and q_t == -p:
             # B0 = -(8 * (p + q_mt) ** 2 * q_t * np.sin(theta)
@@ -6137,9 +6324,9 @@ def standard_p1l2_diaboloid_height(x2d: np.ndarray,
             # print(f'dB_dx2d_term2 = {dB_dx2d_term2}')
             # print(f'dB_dx2d_term3 = {dB_dx2d_term3}')
 
-            print(f'dB_dy2d_term1 = {dB_dy2d_term1}')
-            print(f'dB_dy2d_term2 = {dB_dy2d_term2}')
-            print(f'dB_dy2d_term3 = {dB_dy2d_term3}')
+            # print(f'dB_dy2d_term1 = {dB_dy2d_term1}')
+            # print(f'dB_dy2d_term2 = {dB_dy2d_term2}')
+            # print(f'dB_dy2d_term3 = {dB_dy2d_term3}')
             dB_dx2d = dB_dx2d_term1 + dB_dx2d_term2 + dB_dx2d_term3
             dB_dy2d = dB_dy2d_term1 + dB_dy2d_term2 + dB_dy2d_term3
 
@@ -6208,10 +6395,27 @@ def standard_p1l2_diaboloid_height(x2d: np.ndarray,
             dG1_dy2d = 4 * y2d
             H1 = q_mt ** 2 + q_t ** 2 - 2 * x2d * np.cos(theta) * q_t + 2 * p * q_mt - 2 * p * x2d * np.cos(theta) - 0.5 * y2d ** 2
             dH1_dx2d = 2 * q_mt * q_mt_dx2d - 2 * np.cos(theta) * q_t + 2 * p * q_mt_dx2d - 2 * p * np.cos(theta)
-            dH1_dy2d = 2 * q_mt * q_mt_dy2d - y2d
+            # dH1_dy2d = 2 * q_mt * q_mt_dy2d - y2d # <-- this is wrong!
+            dH1_dy2d = 2 * q_mt * q_mt_dy2d + 2 * p * q_mt_dy2d - y2d
             dC_dx2d_term7 = dG1_dx2d * H1 + G1 * dH1_dx2d
             dC_dy2d_term7 = dG1_dy2d * H1 + G1 * dH1_dy2d
 
+            # # term7 = 2*y2d**2*(-2*p*x2d*np.cos(theta) + 2*p*(q_s*(1 - np.sqrt(y2d**2/(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2 + 1)) + q_t*np.sqrt(y2d**2/(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2 + 1)) + q_t**2 - 2*q_t*x2d*np.cos(theta) - 0.5*y2d**2 + (q_s*(1 - np.sqrt(y2d**2/(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2 + 1)) + q_t*np.sqrt(y2d**2/(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2 + 1))**2)
+            # dT7_dy2d_sym_num = 2*y2d**2*(2*p*(-q_s*y2d**2*np.sin(theta)/(np.sqrt(y2d**2/(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2 + 1)*(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**3) + q_t*y2d**2*np.sin(theta)/(np.sqrt(y2d**2/(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2 + 1)*(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**3)) + (q_s*(1 - np.sqrt(y2d**2/(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2 + 1)) + q_t*np.sqrt(y2d**2/(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2 + 1))*(-2*q_s*y2d**2*np.sin(theta)/(np.sqrt(y2d**2/(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2 + 1)*(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**3) + 2*q_t*y2d**2*np.sin(theta)/(np.sqrt(y2d**2/(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2 + 1)*(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**3)))*dz2d_dy2d + 2*y2d**2*(2*p*(-q_s*y2d/(np.sqrt(y2d**2/(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2 + 1)*(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2) + q_t*y2d/(np.sqrt(y2d**2/(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2 + 1)*(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2)) - 1.0*y2d + (q_s*(1 - np.sqrt(y2d**2/(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2 + 1)) + q_t*np.sqrt(y2d**2/(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2 + 1))*(-2*q_s*y2d/(np.sqrt(y2d**2/(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2 + 1)*(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2) + 2*q_t*y2d/(np.sqrt(y2d**2/(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2 + 1)*(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2))) + 4*y2d*(-2*p*x2d*np.cos(theta) + 2*p*(q_s*(1 - np.sqrt(y2d**2/(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2 + 1)) + q_t*np.sqrt(y2d**2/(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2 + 1)) + q_t**2 - 2*q_t*x2d*np.cos(theta) - 0.5*y2d**2 + (q_s*(1 - np.sqrt(y2d**2/(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2 + 1)) + q_t*np.sqrt(y2d**2/(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2 + 1))**2 )
+
+            # dG1_dy2d_H1 = dG1_dy2d * H1
+            # G1_dH1_dy2d = G1 * dH1_dy2d
+
+            # print(f'dG1_dy2d_H1 = {dG1_dy2d_H1}')
+            # print(f'G1_dH1_dy2d = {G1_dH1_dy2d}')
+            
+            # dG1_dy2d_H1_sym_num = 4*y2d*(-2*p*x2d*np.cos(theta) + 2*p*(q_s*(1 - np.sqrt(y2d**2/(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2 + 1)) + q_t*np.sqrt(y2d**2/(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2 + 1)) + q_t**2 - 2*q_t*x2d*np.cos(theta) - 0.5*y2d**2 + (q_s*(1 - np.sqrt(y2d**2/(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2 + 1)) + q_t*np.sqrt(y2d**2/(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2 + 1))**2)
+            # G1_dH1_dy2d_sym_num = 2*y2d**2*(2*p*(-q_s*y2d**2*np.sin(theta)/(np.sqrt(y2d**2/(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2 + 1)*(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**3) + q_t*y2d**2*np.sin(theta)/(np.sqrt(y2d**2/(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2 + 1)*(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**3)) + (q_s*(1 - np.sqrt(y2d**2/(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2 + 1)) + q_t*np.sqrt(y2d**2/(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2 + 1))*(-2*q_s*y2d**2*np.sin(theta)/(np.sqrt(y2d**2/(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2 + 1)*(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**3) + 2*q_t*y2d**2*np.sin(theta)/(np.sqrt(y2d**2/(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2 + 1)*(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**3)))*dz2d_dy2d + 2*y2d**2*(2*p*(-q_s*y2d/(np.sqrt(y2d**2/(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2 + 1)*(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2) + q_t*y2d/(np.sqrt(y2d**2/(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2 + 1)*(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2)) - 1.0*y2d + (q_s*(1 - np.sqrt(y2d**2/(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2 + 1)) + q_t*np.sqrt(y2d**2/(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2 + 1))*(-2*q_s*y2d/(np.sqrt(y2d**2/(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2 + 1)*(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2) + 2*q_t*y2d/(np.sqrt(y2d**2/(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2 + 1)*(q_s - x2d*np.cos(theta) - z2d*np.sin(theta))**2))) 
+            
+            # print(f'dG1_dy2d_H1_sym_num = {dG1_dy2d_H1_sym_num}')
+            # print(f'G1_dH1_dy2d_sym_num = {G1_dH1_dy2d_sym_num}')
+            # print(f'dT7_dy2d_sym_num = {dT7_dy2d_sym_num}')
+            
             # Term 8: 4 * (p + q_mt) ** 2 * x2d ** 2 * np.sin(theta) ** 2
             I1 = 4 * (p + q_mt) ** 2 * np.sin(theta) ** 2
             dI1_dx2d = 8 * (p + q_mt) * q_mt_dx2d * np.sin(theta) ** 2
@@ -6237,33 +6441,42 @@ def standard_p1l2_diaboloid_height(x2d: np.ndarray,
             # print(f'dC_dx2d_term7 = {dC_dx2d_term7}')
             # print(f'dC_dx2d_term8 = {dC_dx2d_term8}')
 
-            print(f'dC_dy2d_term1 = {dC_dy2d_term1}')
-            print(f'dC_dy2d_term2 = {dC_dy2d_term2}')
-            print(f'dC_dy2d_term3 = {dC_dy2d_term3}')
-            print(f'dC_dy2d_term4 = {dC_dy2d_term4}')
-            print(f'dC_dy2d_term5 = {dC_dy2d_term5}')
-            print(f'dC_dy2d_term6 = {dC_dy2d_term6}')
-            print(f'dC_dy2d_term7 = {dC_dy2d_term7}')
-            print(f'dC_dy2d_term8 = {dC_dy2d_term8}')
+            # print(f'dC_dy2d_term1 = {dC_dy2d_term1}')
+            # print(f'dC_dy2d_term2 = {dC_dy2d_term2}')
+            # print(f'dC_dy2d_term3 = {dC_dy2d_term3}')
+            # print(f'dC_dy2d_term4 = {dC_dy2d_term4}')
+            # print(f'dC_dy2d_term5 = {dC_dy2d_term5}')
+            # print(f'dC_dy2d_term6 = {dC_dy2d_term6}')
+            # print(f'dC_dy2d_term7 = {dC_dy2d_term7}')
+            # print(f'dC_dy2d_term8 = {dC_dy2d_term8}')
 
         # Surface normal
         # print(f'z2d = {z2d}')
 
-        dA_dx2d = dA_dx2d*z2d**2
-        dA_dy2d = dA_dy2d*z2d**2
+        # dA_dx2d = dA_dx2d*z2d**2
+        # dA_dy2d = dA_dy2d*z2d**2
         
-        dB_dx2d = dB_dx2d*z2d
-        dB_dy2d = dB_dy2d*z2d   
+        # dB_dx2d = dB_dx2d*z2d
+        # dB_dy2d = dB_dy2d*z2d   
         
-        print(f'dA_dx2d = {dA_dx2d}')
-        print(f'dB_dx2d / 4 = {dB_dx2d/4}')
-        print(f'dC_dx2d / 4 = {dC_dx2d/4}')
-        print(f'dA_dy2d = {dA_dy2d}')
-        print(f'dB_dy2d / 4 = {dB_dy2d/4}')
-        print(f'dC_dy2d / 4 = {dC_dy2d/4}')
-        df_dx = dA_dx2d + dB_dx2d + dC_dx2d
-        df_dy = dA_dy2d + dB_dy2d + dC_dy2d
-        df_dz = 2*A*z2d_new + B
+        # print(f'dA_dx2d = {dA_dx2d}')
+        # print(f'dA_dy2d = {dA_dy2d}')
+        # print(f'dB_dx2d = {dB_dx2d}')
+        # print(f'dB_dy2d = {dB_dy2d}')
+        # print(f'dC_dx2d = {dC_dx2d}')
+        # print(f'dC_dy2d = {dC_dy2d}')
+        df_dx = dA_dx2d * z2d**2 + dB_dx2d * z2d + dC_dx2d
+        df_dy = dA_dy2d * z2d**2 + dB_dy2d * z2d + dC_dy2d
+        df_dz = 2*A*z2d + B
+        
+        # df_dx = dA_dx2d * z2d**2 + dB_dx2d_num * z2d + dC_dx2d_num
+        # df_dy = dA_dy2d * z2d**2 + dB_dy2d_num * z2d + dC_dy2d_num
+        # df_dz = 2*A*z2d + B      
+        
+        # df_dx = (dA_dx2d_num * z2d**2 + dz2d_dx2d*2*z2d*A) + (dB_dx2d_num * z2d + dz2d_dx2d * B) + dC_dx2d_num
+        # df_dy = (dA_dy2d_num * z2d**2 + dz2d_dy2d*2*z2d*A) + (dB_dy2d_num * z2d + dz2d_dy2d * B) + dC_dy2d_num
+        # df_dz = 2*A*z2d + B
+
         # print(f'df_dx = {df_dx}, df_dy = {df_dy}, df_dz = {df_dz}')
 
         norm = np.sqrt(df_dx**2 + df_dy**2 + df_dz**2)
@@ -6282,17 +6495,17 @@ def standard_p1l2_diaboloid_height(x2d: np.ndarray,
 
         dz2d_dx2d = dz2d_dx2d_new
         dz2d_dy2d = dz2d_dy2d_new
-        print(f'z2d = {z2d}')
+        # print(f'z2d = {z2d}')
         # print(f'dz2d_dx2d = {dz2d_dx2d}')
         # print(f'dz2d_dy2d = {dz2d_dy2d}')
-        print(f'surf_normal = {surf_normal}')
+        # print(f'surf_normal = {surf_normal}')
 
         if iter_num > 0:
             dz2d = z3d[..., iter_num] - z3d[..., iter_num - 1]
             rms_dz = np.nanstd(dz2d)
             print(f'iter_num = {iter_num}, rms_dz = {rms_dz}')
             print('=================')
-            if rms_dz < 1e-30:
+            if rms_dz < 1e-12:
                 z3d = z3d[..., : iter_num + 1]
                 break
 
