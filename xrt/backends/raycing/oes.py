@@ -2261,7 +2261,7 @@ class ConcaveEllipsoidalMirrorXMF(OE):
 
 
 class SagColDiaboloidalMirrorXMF(OE):
-   """Implements sagittally collimating diaboloidal mirror in XMF.
+   """Implements sagittal collimating diaboloidal mirror in XMF.
    """
 
    cl_plist = ("p", "alpha", "ae", "be", "ce")
@@ -2325,7 +2325,7 @@ class SagColDiaboloidalMirrorXMF(OE):
 
 
 class TanColDiaboloidalMirrorXMF(OE):
-   """Implements Tangentially collimating diaboloidal mirror in XMF.
+   """Implements tangential collimating diaboloidal mirror in XMF.
    """
 
    cl_plist = ("p", "alpha", "ae", "be", "ce")
@@ -2391,7 +2391,7 @@ class TanColDiaboloidalMirrorXMF(OE):
 
 
 class P1L2DiaboloidalMirrorXMF(OE):
-   """Implements Tangentially collimating diaboloidal mirror in XMF.
+   """Implements P1L2 diaboloidal mirror in XMF.
    """
 
    cl_plist = ("p", "alpha", "ae", "be", "ce")
@@ -5566,7 +5566,7 @@ def standard_sag_col_diaboloid_height(x2d: np.ndarray,
                                       ):
 
     """
-    The standard sagittally collimated diaboloid with (``abs_p``, ``abs_q``, ``theta``)
+    The standard sagittal collimated diaboloid with (``abs_p``, ``abs_q``, ``theta``)
 
     Parameters
     ----------
@@ -5636,7 +5636,7 @@ def standard_tan_col_diaboloid_height(x2d: np.ndarray,
                                       ):
 
     """
-    The standard tangentially collimated diaboloid with (``abs_p``, ``abs_q``, ``theta``)
+    The standard tangential collimated diaboloid with (``abs_p``, ``abs_q``, ``theta``)
 
     Parameters
     ----------
