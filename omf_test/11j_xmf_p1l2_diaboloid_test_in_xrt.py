@@ -19,8 +19,8 @@ import xrt.runner as xrtrun
 m1_theta = 2/180*np.pi
 
 m1_p = 50_000
-m1_q_t = 5_000
-m1_q_s = -50_000
+m1_q_t = 5000_000_000
+m1_q_s = 5_000
 src_dxprime = 4e-4
 src_dzprime = 1e-4
 src_dx = 212e-6*1e-6

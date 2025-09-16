@@ -6481,10 +6481,13 @@ def standard_p1l2_diaboloid_height(x2d: np.ndarray,
 
         norm = np.sqrt(df_dx**2 + df_dy**2 + df_dz**2)
         if np.any(norm == 0):
-            raise ValueError("The normal vector has zero length, which may indicate a singularity in the surface.")
-        nx = - df_dx / norm
-        ny = - df_dy / norm
-        nz = - df_dz / norm
+            nx = z2d*0
+            ny = z2d*0
+            nz = z2d*0 + 1
+        else:
+            nx = - df_dx / norm
+            ny = - df_dy / norm
+            nz = - df_dz / norm
         surf_normal = [nx, ny, nz]
         # print(f'nx = {nx}, ny = {ny}, nz = {nz}')
 
