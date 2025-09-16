@@ -1,0 +1,183 @@
+# -*- coding: utf-8 -*-
+# xrt scripts
+
+import numpy as np
+
+# xrt code
+from xrt.backends.raycing.oes_base import OE
+    
+class SemiGeneralDiaboloidMirrorLei3(OE):
+    # Lei's equation with his iteration solution method with analytical
+    # surface normal
+    """Implements a semi-general diaboloid mirror, with a stigmatic source
+    point and separate tangential and sagittal focus points. The diaboloid
+    is defined optically by p, qt, qs and theta, where theta in the 
+    incident grazing angle in radians.
+    
+    This version uses Lei's equation for the surface figure with a numerical
+    root finder for both the surface figure and the normal to the surface
+    
+    Parameter list:
+        *p*: source distance
+        *qt*: tangential image distance
+        *qs*: sagittal image distance
+        *theta*: incident grazing angle in radians
+    """
+
+    def __init__(self, *args, **kwargs):
+        # it looks to me like args and kwargs are passed to the base OE class,
+        # after removing and assigning p,q, and theta to this class
+        """
+        *p*: source distance
+        *qt*: tangential image distance
+        *qs*: sagittal image distance
+        *theta*: incident grazing angle in radians
+        """
+        kwargs = self.__pop_kwargs(**kwargs)
+        OE.__init__(self, *args, **kwargs)
+        if self.p == None:
+            raise ValueError("No value given for p")
+        if self.qt == None:
+            raise ValueError("No value given for qt")
+        if self.qs == None:
+            raise ValueError("No value given for qs")
+        if self.t == None:
+            raise ValueError("No value given for theta")
+
+    def __pop_kwargs(self, **kwargs):
+        self.p = kwargs.pop('p', None)
+        self.qt = kwargs.pop('qt', None)
+        self.qs = kwargs.pop('qs', None)
+        self.t = kwargs.pop('theta', None)
+        return kwargs
+
+    def local_z(self, x, y):     
+        p = self.p
+        qt = self.qt
+        qs = self.qs
+        t = self.t
+        
+        # calc ellipsoid z as starting point
+        q = 2 / (1 / qt + 1 / qs)
+        h = (p - q)*np.cos(t)
+        A = h*h + 4*p*q
+        B = 2*(p + q)*np.sin(t)*(h*y - 2*p*q)
+        C = (p + q)*(p + q)*(x*x + np.sin(t)**2*y*y)
+        z = 0.5*(1/A)*(-B - np.sqrt(B*B - 4*A*C))
+    
+        max_num_of_iters = 10
+
+        for iter_num in range(max_num_of_iters):
+            d_t = qt - z * np.sin(t) - y * np.cos(t)
+            d_s = qs - z * np.sin(t) - y * np.cos(t)
+            sqrt_term = np.sqrt(1 + x ** 2 / d_s ** 2)
+            q_mt = qt * sqrt_term + qs * (1 - sqrt_term)
+    
+            g_mt = (
+                (2 * qt * (z * np.sin(t) + y * np.cos(t)) - (z * np.sin(t) + y * np.cos(t)) ** 2)
+                * x ** 2 / d_s ** 2
+                + 2 * qt * sqrt_term * qs * (1 - sqrt_term)
+                + qs ** 2 * (1 - sqrt_term) ** 2
+            )
+            g_mt = np.where(np.iscomplex(g_mt), np.nan, g_mt)
+    
+            A = 4 * (p + q_mt) ** 2 - 4 * (p - qt) ** 2 * np.sin(t) ** 2
+            B0 = -(
+                8 * (p + q_mt) ** 2 * qt * np.sin(t)
+                + 4 * (p - qt)
+                * np.sin(t)
+                * (
+                    x ** 2 * (d_t ** 2 - d_s ** 2) / d_s ** 2
+                    - 2 * y * (p + qt) * np.cos(t)
+                    + 2 * p * q_mt
+                    + q_mt ** 2
+                    + qt ** 2
+                )
+            )
+            B = (
+                -8 * (p ** 2 + 2 * p * q_mt) * qt * np.sin(t)
+                - 4 * qt * np.sin(t) * (g_mt + 2 * y * (p + qt) * np.cos(t) - 2 * p * q_mt + x ** 2)
+                - 4 * p * np.sin(t)
+                * (
+                    x ** 2 * d_t ** 2 / d_s ** 2
+                    - x ** 2
+                    - 2 * y * (p + qt) * np.cos(t)
+                    + 2 * p * q_mt
+                    + q_mt ** 2
+                    + qt ** 2
+                )
+            )
+    
+            C0 = (
+                4 * (p + q_mt) ** 2
+                * (
+                    y ** 2
+                    - 2 * y * qt * np.cos(t)
+                    + x ** 2 * d_t ** 2 / d_s ** 2
+                    + qt ** 2
+                )
+                - (
+                    x ** 2 * (d_t ** 2 - d_s ** 2) / d_s ** 2
+                    - 2 * y * (p + qt) * np.cos(t)
+                    + 2 * p * q_mt
+                    + q_mt ** 2
+                    + qt ** 2
+                )
+                ** 2
+            )
+            C = (
+                -g_mt ** 2
+                - (4 * y * np.cos(t) * qt + 4 * p * q_mt + 4 * p ** 2) * g_mt
+                + (4 * y ** 2 * np.cos(t) ** 2) * (q_mt ** 2 - qt ** 2)
+                + (2 * x ** 2 + 4 * p * y * np.cos(t)) * (x ** 2 * d_t ** 2 / d_s ** 2)
+                + 4 * p * y * np.cos(t) * (q_mt - qt) ** 2
+                + 8 * p * y * np.cos(t) * (p + y * np.cos(t)) * (q_mt - qt)
+                + (2 * x ** 2)
+                * (
+                    q_mt ** 2
+                    + qt ** 2
+                    - 2 * y * np.cos(t) * qt
+                    + 2 * p * q_mt
+                    - 2 * p * y * np.cos(t)
+                    - 0.5 * x ** 2
+                )
+                + 4 * (p + q_mt) ** 2 * y ** 2 * np.sin(t) ** 2
+            )
+    
+            A = np.where(np.iscomplex(A), np.nan, A)
+            B0 = np.where(np.iscomplex(B0), np.nan, B0)
+            B = np.where(np.iscomplex(B), np.nan, B)
+            C0 = np.where(np.iscomplex(C0), np.nan, C0)
+            C = np.where(np.iscomplex(C), np.nan, C)
+    
+            if qs == -p and qt == -p:
+                B = B0
+                C = C0
+    
+            discriminant = B ** 2 - 4 * A * C
+            z_new = (-B - np.sqrt(discriminant)) / (2 * A)
+            z_new = np.where(np.iscomplex(z_new), np.nan, np.real(z_new))
+            z = z_new
+
+        return z
+    
+    def local_n(self, x, y):
+        """Determines the normal vector of OE at (x, y) position."""
+        p = self.p
+        qt = self.qt
+        qs = self.qs
+        t = self.t
+        cos = np.cos(t)
+        sin = np.sin(t)
+        
+        z = self.local_z(x,y)
+        
+        dt = qt - y*cos - z*sin
+        ds = qs - y*cos - z*sin
+
+        dfdx = -x*np.sqrt((x**2 + ds**2)/ds**2)*(-qs + qt)/(x**2 + ds**2) + x/np.sqrt(x**2 + (-p*sin + z)**2 + (p*cos + y)**2) + x*dt**2/(ds**2*np.sqrt(x**2*dt**2/ds**2 + (-qt*sin + z)**2 + (-qt*cos + y)**2))
+        dfdy = -np.sqrt((x**2 + ds**2)/ds**2)*(-qs + qt)*((x**2 + ds**2)*cos/ds**3 - cos/ds)*ds**2/(x**2 + ds**2) + (p*cos + y)/np.sqrt(x**2 + (-p*sin + z)**2 + (p*cos + y)**2) + (-qt*cos - x**2*dt*cos/ds**2 + x**2*dt**2*cos/ds**3 + y)/np.sqrt(x**2*dt**2/ds**2 + (-qt*sin + z)**2 + (-qt*cos + y)**2)    
+        dfdz = -np.sqrt((x**2 + ds**2)/ds**2)*(-qs + qt)*((x**2 + ds**2)*sin/ds**3 - sin/ds)*ds**2/(x**2 + ds**2) + (-p*sin + z)/np.sqrt(x**2 + (-p*sin + z)**2 + (p*cos + y)**2) + (-qt*sin - x**2*dt*sin/ds**2 + x**2*dt**2*sin/ds**3 + z)/np.sqrt(x**2*dt**2/ds**2 + (-qt*sin + z)**2 + (-qt*cos + y)**2)
+        norm = (dfdx**2 + dfdy**2 + dfdz**2)**0.5
+        return [-dfdx/norm, -dfdy/norm, -dfdz/norm]
+    
