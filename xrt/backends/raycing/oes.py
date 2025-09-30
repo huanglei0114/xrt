@@ -1675,7 +1675,7 @@ class ConvexHyperbolicCylindricalMirrorXMF(OE):
        self.isCylindrical = kwargs.pop('isCylindrical', True)  # always!
        self.pcorrected = 0
        return kwargs
-
+           
    def local_z(self, x, y):
        x_xmf = y*1e-3
        p_xmf = self.p*1e-3  
@@ -5340,11 +5340,11 @@ def standard_quadric_cylinder_height(x: np.ndarray,
         ny = - df_dy / norm
         nz = - df_dz / norm
         surf_normal = [nx, ny, nz]
-        print(f'z = {z_quad_sln}')
-        print(f'dA_dx = {dA_dx}')
-        print(f'dB_dx = {dB_dx}')
-        print(f'dC_dx = {dC_dx}')
-        print(f'surface normal = {surf_normal}')
+        # print(f'z = {z_quad_sln}')
+        # print(f'dA_dx = {dA_dx}')
+        # print(f'dB_dx = {dB_dx}')
+        # print(f'dC_dx = {dC_dx}')
+        # print(f'surface normal = {surf_normal}')
 
         if return_surface_normal_as_extra:
             return (z_quad_sln, surf_normal)
