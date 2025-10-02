@@ -60,30 +60,35 @@ def fwhm_from_samples(samples, bins=201, range=None, baseline=0.0):
 # ===========================================================
 
 m1_theta = 3.4985e-3
-m1_p = 5.1476
-m1_q = 1_494.8531
+m1_p = 1_494.8531
+m1_q = 5.1476
 
-src_dx = 0.5e-3/2.355 # calculate RMS from FWHM
-src_dz = 0.5e-3/2.355 # calculate RMS from FWHM
+src_dx = 145.2e-3/2.355 # calculate RMS from FWHM
+src_dz = 145.2e-3/2.355 # calculate RMS from FWHM
 
-src_dxprime = 25e-3/2.355 # calculate RMS from FWHM
-src_dzprime = 25e-3/2.355 # calculate RMS from FWHM
-    
+src_dxprime = 1e-3/2.355 # calculate RMS from FWHM
+src_dzprime = 1e-3/2.355 # calculate RMS from FWHM
+
 source_y0 = - m1_p * np.cos(m1_theta)
 source_z0 = m1_p * np.sin(m1_theta)
 
 scr_y = m1_q * np.cos(m1_theta)
 scr_z = m1_q * np.sin(m1_theta)
 
+
+    
 def build_beamline(field_z = 0e-3): # field size in z direction
 
     source_y = source_y0 + field_z * np.sin(m1_theta)
     source_z = source_z0 + field_z * np.cos(m1_theta)
-
+    
     # ===========================================================
     
     beamLine = raycing.BeamLine()
 
+    
+    
+    
     beamLine.geometricSource = rsources.GeometricSource(
         bl=beamLine,
         name="GS",
@@ -91,6 +96,7 @@ def build_beamline(field_z = 0e-3): # field size in z direction
         pitch=-m1_theta,
         dx=src_dx,
         dz=src_dz,
+        nrays=500000,  # increase the number of rays
         dxprime=src_dxprime,
         dzprime=src_dzprime)
 
@@ -101,7 +107,7 @@ def build_beamline(field_z = 0e-3): # field size in z direction
         pitch=m1_theta,
         extraPitch=-m1_theta,
         limPhysX=[-10.0, 10.0],
-        limPhysY=[-3.3506, 10.0518],
+        limPhysY=[-10.0518, 3.3506],
         p=m1_p,
         q=m1_q,
         isCylindrical=True
@@ -136,16 +142,16 @@ def run_process(beamLine):
     # === FWHM at screen (local coordinates) ==============================
     # Keep only good rays
     b = screen01beamLocal01
-    # XRT typically flags good rays with state > 0
-    good = (b.state > 0)
+    # XRT typically flags good rays with state == 1
+    good = (b.state == 1)
 
     x = b.x[good]   # meters
     z = b.z[good]   # meters
     xr = (np.nanmin(x), np.nanmax(x))
     zr = (np.nanmin(z), np.nanmax(z))
 
-    fwhm_x, xL, xR = fwhm_from_samples(x, bins=1001, range=xr, baseline=0.0)
-    fwhm_z, zL, zR = fwhm_from_samples(z, bins=1001, range=zr, baseline=0.0)
+    fwhm_x, xL, xR = fwhm_from_samples(x, bins=round(np.sum(good)/100), range=xr, baseline=0.0)
+    fwhm_z, zL, zR = fwhm_from_samples(z, bins=round(np.sum(good)/100), range=zr, baseline=0.0)
 
     print(f"[Screen @ local]  FWHM_x = {fwhm_x:.6e} mm  ({fwhm_x*1e3:.3f} µm)")
     print(f"[Screen @ local]  FWHM_z = {fwhm_z:.6e} mm  ({fwhm_z*1e3:.3f} µm)")
@@ -168,13 +174,12 @@ def define_plots():
         xaxis=xrtplot.XYCAxis(
             label=r"x",
             fwhmFormatStr=r"%.3f",
-            limits=[-2, 2],
             unit="um",
             factor=1e3),
         yaxis=xrtplot.XYCAxis(
             label=r"z",
             fwhmFormatStr=r"%.3f",
-            limits=[source_z0*1e3-5, source_z0*1e3+5],
+            limits=[source_z0*1e3-500, source_z0*1e3+500],
             offset=source_z0*1e3,
             unit="um",
             factor=1e3),
@@ -190,13 +195,13 @@ def define_plots():
         xaxis=xrtplot.XYCAxis(
             label=r"x",
             fwhmFormatStr=r"%.3f",
-            limits=[-100, 100],
+            # limits=[-100, 100],
             unit="um",
             factor=1e3),
         yaxis=xrtplot.XYCAxis(
             label=r"y",
             fwhmFormatStr=r"%.3f",
-            limits=[-4_000, 11_000],
+            limits=[-11_000, 4_000],
             unit="um",
             factor=1e3),
         caxis=xrtplot.XYCAxis(
@@ -233,7 +238,7 @@ def main():
     
     fwhm_x_um = []
     fwhm_z_um = []
-    field_z_um = np.linspace(-5e-3, 5e-3, 21) * 1e3
+    field_z_um = np.linspace(-1, 1, 21) * 1e3
     for field_z in field_z_um * 1e-3:
         beamLine = build_beamline(field_z)
         E0 = list(beamLine.geometricSource.energies)[0]
@@ -262,6 +267,8 @@ def main():
     plt.title("FWHM in z direction vs field position in z direction")
     plt.tight_layout()
     plt.show()
+    
+
 
 
 if __name__ == '__main__':

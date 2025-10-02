@@ -79,8 +79,8 @@ scr_z = m1_q * np.sin(m1_theta)
     
 def build_beamline(field_z = 0e-3): # field size in z direction
 
-    source_y = source_y0
-    source_z = source_z0 + field_z
+    source_y = source_y0 + field_z * np.sin(m1_theta)
+    source_z = source_z0 + field_z * np.cos(m1_theta)
     
     # ===========================================================
     
@@ -235,7 +235,7 @@ def main():
     
     fwhm_x_um = []
     fwhm_z_um = []
-    field_z_um = np.linspace(0e-3, 0e-3, 1) * 1e3
+    field_z_um = np.linspace(1e-3, 1e-3, 1) * 1e3
     for field_z in field_z_um * 1e-3:
         beamLine = build_beamline(field_z)
         E0 = list(beamLine.geometricSource.energies)[0]

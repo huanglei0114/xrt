@@ -70,8 +70,8 @@ m2_q = 1_348.3525
 src_dx = 0.5e-3/2.355 # calculate RMS from FWHM
 src_dz = 0.5e-3/2.355 # calculate RMS from FWHM
   
-src_dxprime = 25e-3/2.355 # calculate RMS from FWHM
-src_dzprime = 25e-3/2.355 # calculate RMS from FWHM
+src_dxprime = 50e-3/2.355 # calculate RMS from FWHM
+src_dzprime = 50e-3/2.355 # calculate RMS from FWHM
    
 source_y0 = - m1_p * np.cos(m1_theta)
 source_z0 = m1_p * np.sin(m1_theta)
@@ -84,8 +84,8 @@ scr_z = m2_z + m2_q * np.sin(m1_theta - 2*m2_theta)
     
 def build_beamline(field_z = 0e-3): # field size in z direction
 
-    source_y = source_y0
-    source_z = source_z0 + field_z
+    source_y = source_y0 + field_z * np.sin(m1_theta)
+    source_z = source_z0 + field_z * np.cos(m1_theta)
    
     # ===========================================================
     
@@ -215,7 +215,7 @@ def define_plots():
         xaxis=xrtplot.XYCAxis(
             label=r"x",
             fwhmFormatStr=r"%.3f",
-            limits=[-1_000, 1_000],
+            # limits=[-1_000, 1_000],
             unit="um",
             factor=1e3),
         yaxis=xrtplot.XYCAxis(
@@ -236,7 +236,7 @@ def define_plots():
         xaxis=xrtplot.XYCAxis(
             label=r"x",
             fwhmFormatStr=r"%.3f",
-            limits=[-5_000, 5_000],
+            # limits=[-5_000, 5_000],
             unit="um",
             factor=1e3),
         yaxis=xrtplot.XYCAxis(

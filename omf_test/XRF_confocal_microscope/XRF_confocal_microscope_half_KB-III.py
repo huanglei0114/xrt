@@ -70,8 +70,8 @@ m2_q = 1_348.3525
 src_dx = 0.5e-3/2.355 # calculate RMS from FWHM
 src_dz = 0.5e-3/2.355 # calculate RMS from FWHM
   
-src_dxprime = 25e-3/2.355 # calculate RMS from FWHM
-src_dzprime = 25e-3/2.355 # calculate RMS from FWHM
+src_dxprime = 50e-3/2.355 # calculate RMS from FWHM
+src_dzprime = 50e-3/2.355 # calculate RMS from FWHM
    
 source_y0 = - m1_p * np.cos(m1_theta)
 source_z0 = m1_p * np.sin(m1_theta)
@@ -84,8 +84,8 @@ scr_z = m2_z + m2_q * np.sin(m1_theta - 2*m2_theta)
     
 def build_beamline(field_z = 0e-3): # field size in z direction
 
-    source_y = source_y0
-    source_z = source_z0 + field_z
+    source_y = source_y0 + field_z * np.sin(m1_theta)
+    source_z = source_z0 + field_z * np.cos(m1_theta)
    
     # ===========================================================
     
@@ -161,16 +161,16 @@ def run_process(beamLine):
     # === FWHM at screen (local coordinates) ==============================
     # Keep only good rays
     b = screen01beamLocal01
-    # XRT typically flags good rays with state > 0
-    good = (b.state > 0)
+    # XRT typically flags good rays with state ==1
+    good = (b.state == 1)
 
     x = b.x[good]   # meters
     z = b.z[good]   # meters
     xr = (np.nanmin(x), np.nanmax(x))
     zr = (np.nanmin(z), np.nanmax(z))
 
-    fwhm_x, xL, xR = fwhm_from_samples(x, bins=1001, range=xr, baseline=0.0)
-    fwhm_z, zL, zR = fwhm_from_samples(z, bins=1001, range=zr, baseline=0.0)
+    fwhm_x, xL, xR = fwhm_from_samples(x, bins=round(np.sum(good)/100), range=xr, baseline=0.0)
+    fwhm_z, zL, zR = fwhm_from_samples(z, bins=round(np.sum(good)/100), range=zr, baseline=0.0)
 
     print(f"[Screen @ local]  FWHM_x = {fwhm_x:.6e} mm  ({fwhm_x*1e3:.3f} µm)")
     print(f"[Screen @ local]  FWHM_z = {fwhm_z:.6e} mm  ({fwhm_z*1e3:.3f} µm)")
@@ -279,7 +279,7 @@ def main():
     
     fwhm_x_um = []
     fwhm_z_um = []
-    field_z_um = np.linspace(-1e-3, -1e-3, 1) * 1e3
+    field_z_um = np.linspace(0e-3, 0e-3, 1) * 1e3
     for field_z in field_z_um * 1e-3:
         beamLine = build_beamline(field_z)
         E0 = list(beamLine.geometricSource.energies)[0]

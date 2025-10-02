@@ -59,27 +59,34 @@ def fwhm_from_samples(samples, bins=201, range=None, baseline=0.0):
                            bins=bins, rng=range, baseline=baseline)
 # ===========================================================
 
-m1_theta = 3.4985e-3
-m1_p = 5.1476
-m1_q = 1_494.8531
+m1_theta = 0.2187e-3
+m1_p = 1_348.3525
+m1_q = 84.4546
 
-src_dx = 0.5e-3/2.355 # calculate RMS from FWHM
-src_dz = 0.5e-3/2.355 # calculate RMS from FWHM
+m2_theta = 4.4989e-3
+m2_p = 223.8571
+m2_q = 12.2460 
 
-src_dxprime = 25e-3/2.355 # calculate RMS from FWHM
-src_dzprime = 25e-3/2.355 # calculate RMS from FWHM
-    
+src_dx = 145.2e-3/2.355 # calculate RMS from FWHM
+src_dz = 145.2e-3/2.355 # calculate RMS from FWHM
+  
+src_dxprime = 0.52e-3/2.355 # calculate RMS from FWHM
+src_dzprime = 0.52e-3/2.355 # calculate RMS from FWHM
+   
 source_y0 = - m1_p * np.cos(m1_theta)
 source_z0 = m1_p * np.sin(m1_theta)
+   
+m2_y = (m2_p - m1_q) * np.cos(m1_theta)
+m2_z = (m2_p - m1_q) * np.sin(m1_theta)
 
-scr_y = m1_q * np.cos(m1_theta)
-scr_z = m1_q * np.sin(m1_theta)
-
+scr_y = m2_y + m2_q * np.cos(m1_theta - 2*m2_theta)
+scr_z = m2_z + m2_q * np.sin(m1_theta - 2*m2_theta)
+    
 def build_beamline(field_z = 0e-3): # field size in z direction
 
     source_y = source_y0 + field_z * np.sin(m1_theta)
     source_z = source_z0 + field_z * np.cos(m1_theta)
-
+   
     # ===========================================================
     
     beamLine = raycing.BeamLine()
@@ -94,24 +101,37 @@ def build_beamline(field_z = 0e-3): # field size in z direction
         dxprime=src_dxprime,
         dzprime=src_dzprime)
 
-    beamLine.mirror = roes.EllipticalMirror(
+    beamLine.m1 = roes.ConvexHyperbolicCylindricalMirrorXMF(
         bl=beamLine,
-        name="EM",
+        name="HM",
         center=[0, 0, 0],
-        pitch=m1_theta,
+        theta=m1_theta,
         extraPitch=-m1_theta,
         limPhysX=[-10.0, 10.0],
-        limPhysY=[-3.3506, 10.0518],
+        limPhysY=[-74.9994, 74.9994],
         p=m1_p,
         q=m1_q,
         isCylindrical=True
         )
 
+    beamLine.m2 = roes.EllipticalMirror(
+        bl=beamLine,
+        name="EM",
+        center=[0, m2_y, m2_z],
+        pitch=m2_theta,
+        extraPitch = - m1_theta + m2_theta,
+        extraRoll = np.pi,
+        limPhysX=[-10.0, 10.0],
+        limPhysY=[-62.3024, 5.2389],
+        p=m2_p,
+        q=m2_q
+        )
+    
     beamLine.screen = rscreens.Screen(
         bl=beamLine,
         name="SCR",
         center=[0, scr_y, scr_z],
-        z=[0, -np.sin(m1_theta), np.cos(m1_theta)]
+        z=[0, -np.sin(m1_theta-2*m2_theta), np.cos(m1_theta-2*m2_theta)]
     )
 
     return beamLine
@@ -120,32 +140,37 @@ def build_beamline(field_z = 0e-3): # field size in z direction
 def run_process(beamLine):
     geometricSource01beamGlobal01 = beamLine.geometricSource.shine()
 
-    mrrorParam01beamGlobal01, mrrorParam01beamLocal01 = beamLine.mirror.reflect(
+    m1Param01beamGlobal01, m1Param01beamLocal01 = beamLine.m1.reflect(
         beam=geometricSource01beamGlobal01)
 
+    m2Param01beamGlobal01, m2Param01beamLocal01 = beamLine.m2.reflect(
+        beam=m1Param01beamGlobal01)
+
     screen01beamLocal01 = beamLine.screen.expose(
-        beam=mrrorParam01beamGlobal01)
+        beam=m2Param01beamGlobal01)
 
     outDict = {
         'geometricSource01beamGlobal01': geometricSource01beamGlobal01,
-        'mrrorParam01beamGlobal01': mrrorParam01beamGlobal01,
-        'mrrorParam01beamLocal01': mrrorParam01beamLocal01,
+        'm1Param01beamGlobal01': m1Param01beamGlobal01,
+        'm1Param01beamLocal01': m1Param01beamLocal01,
+        'm2Param01beamGlobal01': m2Param01beamGlobal01,
+        'm2Param01beamLocal01': m2Param01beamLocal01,
         'screen01beamLocal01': screen01beamLocal01}
     beamLine.prepare_flow()
     
     # === FWHM at screen (local coordinates) ==============================
     # Keep only good rays
     b = screen01beamLocal01
-    # XRT typically flags good rays with state > 0
-    good = (b.state > 0)
+    # XRT typically flags good rays with state == 1
+    good = (b.state == 1)
 
     x = b.x[good]   # meters
     z = b.z[good]   # meters
     xr = (np.nanmin(x), np.nanmax(x))
     zr = (np.nanmin(z), np.nanmax(z))
 
-    fwhm_x, xL, xR = fwhm_from_samples(x, bins=1001, range=xr, baseline=0.0)
-    fwhm_z, zL, zR = fwhm_from_samples(z, bins=1001, range=zr, baseline=0.0)
+    fwhm_x, xL, xR = fwhm_from_samples(x, bins=round(np.sum(good)/100), range=xr, baseline=0.0)
+    fwhm_z, zL, zR = fwhm_from_samples(z, bins=round(np.sum(good)/100), range=zr, baseline=0.0)
 
     print(f"[Screen @ local]  FWHM_x = {fwhm_x:.6e} mm  ({fwhm_x*1e3:.3f} µm)")
     print(f"[Screen @ local]  FWHM_z = {fwhm_z:.6e} mm  ({fwhm_z*1e3:.3f} µm)")
@@ -174,7 +199,7 @@ def define_plots():
         yaxis=xrtplot.XYCAxis(
             label=r"z",
             fwhmFormatStr=r"%.3f",
-            limits=[source_z0*1e3-5, source_z0*1e3+5],
+            limits=[source_z0*1e3-1500, source_z0*1e3+1500],
             offset=source_z0*1e3,
             unit="um",
             factor=1e3),
@@ -185,18 +210,18 @@ def define_plots():
         aspect="equal")
     plots.append(Source)
 
-    Footprint = xrtplot.XYCPlot(
-        beam=r"mrrorParam01beamLocal01",
+    M1Footprint = xrtplot.XYCPlot(
+        beam=r"m1Param01beamLocal01",
         xaxis=xrtplot.XYCAxis(
             label=r"x",
             fwhmFormatStr=r"%.3f",
-            limits=[-100, 100],
+            # limits=[-1_000, 1_000],
             unit="um",
             factor=1e3),
         yaxis=xrtplot.XYCAxis(
             label=r"y",
             fwhmFormatStr=r"%.3f",
-            limits=[-4_000, 11_000],
+            limits=[-75_000, 75_000],
             unit="um",
             factor=1e3),
         caxis=xrtplot.XYCAxis(
@@ -204,7 +229,28 @@ def define_plots():
             unit=r"eV"),
         title=r"Footprint",
         aspect="auto")
-    plots.append(Footprint)
+    plots.append(M1Footprint)
+    
+    M2Footprint = xrtplot.XYCPlot(
+        beam=r"m2Param01beamLocal01",
+        xaxis=xrtplot.XYCAxis(
+            label=r"x",
+            fwhmFormatStr=r"%.3f",
+            # limits=[-5_000, 5_000],
+            unit="um",
+            factor=1e3),
+        yaxis=xrtplot.XYCAxis(
+            label=r"y",
+            fwhmFormatStr=r"%.3f",
+            limits=[-63_000, 5_000],
+            unit="um",
+            factor=1e3),
+        caxis=xrtplot.XYCAxis(
+            label=r"energy",
+            unit=r"eV"),
+        title=r"Footprint",
+        aspect="auto")
+    plots.append(M2Footprint)
 
     Focus = xrtplot.XYCPlot(
         beam=r"screen01beamLocal01",
@@ -233,19 +279,20 @@ def main():
     
     fwhm_x_um = []
     fwhm_z_um = []
-    field_z_um = np.linspace(-5e-3, 5e-3, 21) * 1e3
+    field_z_um = np.linspace(0e-3, 0e-3, 1) * 1e3
     for field_z in field_z_um * 1e-3:
         beamLine = build_beamline(field_z)
+        beamLine.glow()
         E0 = list(beamLine.geometricSource.energies)[0]
-        beamLine.alignE=E0
-        # plots = define_plots()
+        beamLine.alignE = E0
+        plots = define_plots()
         xrtrun.run_ray_tracing(
-            # plots=plots,
+            plots=plots,
             repeats=1,
             processes=1,
             backend=r"raycing",
             beamLine=beamLine)
-        # beamLine.glow()
+        
         fwhm_x_um.append(beamLine.fwhm_x*1e3)
         fwhm_z_um.append(beamLine.fwhm_z*1e3)
 
@@ -253,15 +300,7 @@ def main():
     print("FWHM X (µm):", fwhm_x_um)
     print("FWHM Z (µm):", fwhm_z_um)
     
-    # plot FWHM vs field size
-    plt.figure(figsize=(16,9))
-    plt.plot(field_z_um, fwhm_z_um, '-o')
-    plt.xlabel("Field position in z direction (µm)")
-    plt.ylabel("FWHM in z direction (µm)")
-    plt.grid()
-    plt.title("FWHM in z direction vs field position in z direction")
-    plt.tight_layout()
-    plt.show()
+
 
 
 if __name__ == '__main__':
