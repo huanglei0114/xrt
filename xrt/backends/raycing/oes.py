@@ -5298,6 +5298,8 @@ def standard_quadric_cylinder_height(x: np.ndarray,
         # Discriminant
         Delta = B**2 - 4*A*C
 
+        z_quad_sln = np.nan*np.ones_like(x) # Default value
+        
         if (p < 0 and q < 0): # Top (convex) elliptic cylinder
             z_quad_sln = (-B + np.sqrt(Delta))/(2*A)
         elif (p > 0 and q > 0): # Bottom (concave) elliptic cylinder
@@ -5314,7 +5316,7 @@ def standard_quadric_cylinder_height(x: np.ndarray,
                 z_quad_sln = (-B - np.sqrt(Delta))/(2*A)
 
         if Delta.size==1:
-            if Delta<0:
+            if Delta[0]<0:
                 z_quad_sln = np.nan
         else:
             z_quad_sln[Delta<0] = np.nan
@@ -5356,6 +5358,7 @@ def standard_quadric_cylinder_height(x: np.ndarray,
                    p: float,
                    q: float,
                    theta: float):
+        z_expression = np.nan*np.ones_like(x) # Default value
         if (p*q>0): # Elliptical cylinder
             z_expression = (p+q)*np.sin(theta)*(-x*(p-q)*np.cos(theta) + 2*p*q - np.sqrt(-4*p*q*x**2 - 4*p*q*(p-q)*x*np.cos(theta) + 4*p**2*q**2))/((p+q)**2-(p-q)**2*np.sin(theta)**2)
         elif (p*q < 0): # Hyperbolic cylinder
