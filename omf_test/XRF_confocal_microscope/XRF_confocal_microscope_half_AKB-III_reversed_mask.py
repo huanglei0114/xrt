@@ -66,6 +66,7 @@ def fwhm_from_samples(samples, bins=201, range=None, baseline=0.0):
 m1_theta = 0.2187e-3
 m1_p = 1_348.3525
 m1_q = 84.4546
+m1_l = 150
 
 m2_theta = 4.4989e-3
 m2_p = 223.8571
@@ -75,7 +76,7 @@ src_dx = 145.2e-3/2.355 # calculate RMS from FWHM
 src_dz = 1*145.2e-3/2.355 # calculate RMS from FWHM
   
 src_dxprime = 0.52e-3/2.355 # calculate RMS from FWHM
-src_dzprime = 5*0.52e-3/2.355 # calculate RMS from FWHM
+src_dzprime = 0.52e-3/2.355 # calculate RMS from FWHM
    
 source_y0 = - m1_p * np.cos(m1_theta)
 source_z0 = m1_p * np.sin(m1_theta)
@@ -90,6 +91,8 @@ def build_beamline(field_z = 0e-3): # field size in z direction
 
     source_y = source_y0 + field_z * np.sin(m1_theta)
     source_z = source_z0 + field_z * np.cos(m1_theta)
+    
+    ca = (m1_theta + field_z/m1_p)*m1_l
    
     # ===========================================================
     
@@ -110,7 +113,7 @@ def build_beamline(field_z = 0e-3): # field size in z direction
         bl=beamLine,
         name=r"Mask",
         center=[0, 0, 0],
-        opening=[-10.0, 10.0, -0.03, 0.02],
+        opening=[-10.0, 10.0, -ca/2, ca/2],
         x=[1.0, 0.0, 0.0],
         z=[0.0, 0.0, 1.0])
 
@@ -120,7 +123,7 @@ def build_beamline(field_z = 0e-3): # field size in z direction
         center=[0, 0, 0],
         theta=m1_theta,
         limPhysX=[-10.0, 10.0],
-        limPhysY=[-74.9994, 74.9994],
+        limPhysY=[-m1_l/2, m1_l/2],
         p=m1_p,
         q=m1_q,
         isCylindrical=True
@@ -307,7 +310,7 @@ def main():
     
     fwhm_x_um = []
     fwhm_z_um = []
-    field_z_um = np.linspace(2, 2, 1) * 1e3
+    field_z_um = np.linspace(0.5, 0.5, 1) * 1e3
     for field_z in field_z_um * 1e-3:
         beamLine = build_beamline(field_z)
         
