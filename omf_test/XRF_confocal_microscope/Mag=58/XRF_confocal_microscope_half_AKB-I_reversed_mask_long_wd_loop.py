@@ -63,18 +63,18 @@ def fwhm_from_samples(samples, bins=201, range=None, baseline=0.0):
                            bins=bins, rng=range, baseline=baseline)
 # ===========================================================
 
-m1_theta = 3.2169e-3
-m1_p = 1457.6875
-m1_q = 49.2891
-m1_lu = 20.6970
-m1_ld = 20.6970
+m1_theta = 4.7789e-3
+m1_p = 1462.3153
+m1_q = 50.2872
+m1_lu = 14.8386
+m1_ld = 14.8386
 m1_l = m1_lu + m1_ld
 
-m2_theta = 3.3e-3
-m2_p = 13.5490
-m2_q = 6.5757
-m2_lu = 7.0026
-m2_ld = 4.5750
+m2_theta = 4.6097e-3
+m2_p = 25.2116
+m2_q = 12.6228
+m2_lu = 9.2254
+m2_ld = 6.6207
 
 src_dx = 145.2e-3/5/2.355 # calculate RMS from FWHM
 src_dz = 145.2e-3/5/2.355 # calculate RMS from FWHM
@@ -199,6 +199,7 @@ def run_process(beamLine):
     
     beamLine.fwhm_x = fwhm_x
     beamLine.fwhm_z = fwhm_z
+    beamLine.screen01beamLocal01 = screen01beamLocal01
 
     return outDict
 
@@ -295,6 +296,7 @@ def define_plots():
 
 
 
+
 def main():
     
     fwhm_x_um = []
@@ -330,6 +332,7 @@ def main():
     plt.tight_layout()
     plt.show()
     
+
 
 
 if __name__ == '__main__':

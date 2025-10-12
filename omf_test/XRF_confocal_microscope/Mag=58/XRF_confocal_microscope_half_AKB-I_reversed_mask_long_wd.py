@@ -63,18 +63,18 @@ def fwhm_from_samples(samples, bins=201, range=None, baseline=0.0):
                            bins=bins, rng=range, baseline=baseline)
 # ===========================================================
 
-m1_theta = 3.2169e-3
-m1_p = 1457.6875
-m1_q = 49.2891
-m1_lu = 20.6970
-m1_ld = 20.6970
+m1_theta = 4.7789e-3
+m1_p = 1462.3153
+m1_q = 50.2872
+m1_lu = 14.8386
+m1_ld = 14.8386
 m1_l = m1_lu + m1_ld
 
-m2_theta = 3.3e-3
-m2_p = 13.5490
-m2_q = 6.5757
-m2_lu = 7.0026
-m2_ld = 4.5750
+m2_theta = 4.6097e-3
+m2_p = 25.2116
+m2_q = 12.6228
+m2_lu = 9.2254
+m2_ld = 6.6207
 
 src_dx = 145.2e-3/5/2.355 # calculate RMS from FWHM
 src_dz = 145.2e-3/5/2.355 # calculate RMS from FWHM
@@ -199,6 +199,7 @@ def run_process(beamLine):
     
     beamLine.fwhm_x = fwhm_x
     beamLine.fwhm_z = fwhm_z
+    beamLine.screen01beamLocal01 = screen01beamLocal01
 
     return outDict
 
@@ -299,14 +300,15 @@ def main():
     
     fwhm_x_um = []
     fwhm_z_um = []
-    field_z_um = np.linspace(-0.3, 0.3, 11) * 1e3
+    field_z_um = np.linspace(-0.3, -0.3, 1) * 1e3
     for field_z in field_z_um * 1e-3:
         beamLine = build_beamline(field_z)
+        
         E0 = list(beamLine.geometricSource.energies)[0]
-        beamLine.alignE=E0
-        # plots = define_plots()
+        beamLine.alignE = E0
+        plots = define_plots()
         xrtrun.run_ray_tracing(
-            # plots=plots,
+            plots=plots,
             repeats=1,
             processes=1,
             backend=r"raycing",
@@ -314,22 +316,53 @@ def main():
         # beamLine.glow()
         fwhm_x_um.append(beamLine.fwhm_x*1e3)
         fwhm_z_um.append(beamLine.fwhm_z*1e3)
+    
+    # === FWHM at screen (local coordinates) ==============================
 
+    # Keep only good rays
+    b = beamLine.screen01beamLocal01
+    # XRT typically flags good rays with state == 1
+    good = b.state == 1
+    print(f"[good]  good = {np.sum(good)}")
+    
+    x = b.x[good]   # meters
+    z = b.z[good]   # meters
+    xr = (np.nanmin(x), np.nanmax(x))
+    zr = (np.nanmin(z), np.nanmax(z))
+
+    fwhm_x, xL, xR = fwhm_from_samples(x, bins=min(round(np.sum(good)/100), 512), range=xr, baseline=0.0)
+    fwhm_z, zL, zR = fwhm_from_samples(z, bins=min([round(np.sum(good)/100), 512]), range=zr, baseline=0.0)
+
+    print(f"[Screen @ local]  FWHM_x = {fwhm_x:.6e} mm  ({fwhm_x*1e3:.3f} µm)")
+    print(f"[Screen @ local]  FWHM_z = {fwhm_z:.6e} mm  ({fwhm_z*1e3:.3f} µm)")
+    
+    # Combined figure: scatter (x, z) and histogram of z
+    fig, ax = plt.subplots(1, 2, figsize=(12, 5))
+
+    # Scatter plot of (x, z)
+    ax[0].scatter(x*1e3, z*1e3, s=1)
+    ax[0].set_xlabel("x (µm)")
+    ax[0].set_ylabel("z (µm)")
+    ax[0].set_title("Scatter plot of (x, z) at the screen")
+    ax[0].grid()
+
+    # Histogram of z
+    ax[1].hist(z*1e3, bins=100, range=(zr[0]*1e3, zr[1]*1e3))
+    ax[1].set_xlabel("z (µm)")
+    ax[1].set_ylabel("Counts")
+    ax[1].set_title("Histogram of z at the screen")
+    ax[1].grid()
+
+    plt.tight_layout()
+    plt.show()
+    
+    # =====================================================================
+    
     print("Field position in z direction (µm):", field_z_um)
     print("FWHM X (µm):", fwhm_x_um)
     print("FWHM Z (µm):", fwhm_z_um)
     
-    # plot FWHM vs field size
-    plt.figure(figsize=(16,9))
-    plt.plot(field_z_um, fwhm_z_um, '-o')
-    plt.xlabel("Field position in z direction (µm)")
-    plt.ylabel("FWHM in z direction (µm)")
-    plt.ylim(0, 1.6)
-    plt.grid()
-    plt.title("FWHM in z direction vs field position in z direction")
-    plt.tight_layout()
-    plt.show()
-    
+
 
 
 if __name__ == '__main__':

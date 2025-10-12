@@ -264,6 +264,7 @@ def main():
     plt.plot(field_z_um, fwhm_z_um, '-o')
     plt.xlabel("Field position in z direction (µm)")
     plt.ylabel("FWHM in z direction (µm)")
+    plt.ylim(0, 1.6)
     plt.grid()
     plt.title("FWHM in z direction vs field position in z direction")
     plt.tight_layout()
