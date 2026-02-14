@@ -313,7 +313,7 @@ def main():
             processes=1,
             backend=r"raycing",
             beamLine=beamLine)
-        # beamLine.glow()
+        beamLine.glow()
         fwhm_x_um.append(beamLine.fwhm_x*1e3)
         fwhm_z_um.append(beamLine.fwhm_z*1e3)
     
