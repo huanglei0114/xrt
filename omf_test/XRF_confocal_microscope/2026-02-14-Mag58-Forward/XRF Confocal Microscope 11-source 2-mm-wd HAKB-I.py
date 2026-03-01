@@ -63,18 +63,18 @@ def fwhm_from_samples(samples, bins=201, range=None, baseline=0.0):
 
 # ===========================================================
 
-mh_theta = 4.6097e-3
-mh_p = 12.6228
-mh_q = 25.2116
-mh_lu = 6.6207
-mh_ld = 9.2254
+mh_theta = 3.3e-3
+mh_p = 6.5757
+mh_q = 13.5490
+mh_lu = 4.5750
+mh_ld = 7.0062
 mh_l = mh_lu + mh_ld
 
-me_theta = 4.7789e-3
-me_p = 50.2872
-me_q = 1462.3153
-me_lu = 14.8386
-me_ld = 14.8386
+me_theta = 3.2169e-3
+me_p = 49.2891
+me_q = 1457.6875
+me_lu = 20.6970
+me_ld = 20.6970
 me_l = me_lu + me_ld
 
 src_dx = 0.5e-3/2.355 # calculate RMS from FWHM
@@ -92,7 +92,7 @@ me_z = - abs(mh_q - me_p) * np.sin(me_theta)
 scr_y = me_y + me_q * np.cos(me_theta)
 scr_z = me_z + me_q * np.sin(me_theta)
 
-field_z1d = np.linspace(-5e-3, 5e-3, 11) # field size in z direction
+field_z1d = np.linspace(-10e-3, 10e-3, 11) # field size in z direction
 
 def build_beamline(nrays_per_source=1_000_000): # field size in z direction
 
@@ -118,7 +118,7 @@ def build_beamline(nrays_per_source=1_000_000): # field size in z direction
         bl=beamLine,
         name="Mask",
         center=[0, 0, 0],
-        opening=[-10.0, 10.0, -ca/2*1.5, ca/2*0.5],
+        opening=[-10.0, 10.0, -ca/2*1.5, ca/2*0.30],
         x=[1.0, 0.0, 0.0],
         z=[0.0, 0.0, 1.0])
 
