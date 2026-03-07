@@ -133,7 +133,7 @@ def build_beamline(nrays_per_source=1_000_000): # field size in z direction
         p=mh_p,
         q=mh_q,
         )
-    
+
     beamLine.me = roes.ConcaveEllipticCylindricalMirrorXMF(
         bl=beamLine,
         name="EM",
@@ -144,12 +144,12 @@ def build_beamline(nrays_per_source=1_000_000): # field size in z direction
         p=me_p,
         q=me_q,
         )
-    
+
     beamLine.screen = rscreens.Screen(
         bl=beamLine,
         name="SCR",
         center=[0, scr_y, scr_z],
-        z=[0, -np.sin(mh_theta+2*me_theta), np.cos(mh_theta+2*me_theta)]
+        z=[0, -np.sin(me_theta), np.cos(me_theta)],
     )
 
     return beamLine
@@ -213,7 +213,6 @@ def run_process(beamLine):
     return outDict
 
 rrun.run_process = run_process
-
 
 
 def define_plots():
@@ -356,9 +355,6 @@ def main():
 
     plt.tight_layout()
     plt.show()
-    
-
-
 
 
 if __name__ == '__main__':

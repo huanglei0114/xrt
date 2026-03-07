@@ -3,8 +3,10 @@
 import numpy as np
 import sys
 import os
-
+# sys.path.append(r"/Users/lhuang/Documents/GitHub/xrt")
+# sys.path.append(r"c:/GitHub/xrt")
 sys.path.append(os.path.join('..', '..', '..'))
+# from lei_oes import ConvexHyperbolicCylindricalMirrorXMF
 import xrt.backends.raycing.sources as rsources
 import xrt.backends.raycing.screens as rscreens
 import xrt.backends.raycing.materials as rmats
@@ -63,128 +65,122 @@ def fwhm_from_samples(samples, bins=201, range=None, baseline=0.0):
 
 # ===========================================================
 
-mh_theta = 4.6097e-3
-mh_p = 12.6228
-mh_q = 25.2116
-mh_lu = 6.6207
-mh_ld = 9.2254
-mh_l = mh_lu + mh_ld
+m1_theta = 4.7789e-3
+m1_p = 1462.3153
+m1_q = 50.2872
+m1_lu = 14.8386
+m1_ld = 14.8386
+m1_l = m1_lu + m1_ld
 
-me_theta = 4.7789e-3
-me_p = 50.2872
-me_q = 1462.3153
-me_lu = 14.8386
-me_ld = 14.8386
-me_l = me_lu + me_ld
+m2_theta = 4.6097e-3
+m2_p = 25.2116
+m2_q = 12.6228
+m2_lu = 9.2254
+m2_ld = 6.6207
 
-src_dx = 0.5e-3/2.355 # calculate RMS from FWHM
-src_dz = 0.5e-3/2.355 # calculate RMS from FWHM
+src_dx = 145.2e-3/5/2.355 # calculate RMS from FWHM
+src_dz = 145.2e-3/5/2.355 # calculate RMS from FWHM
 
-src_dxprime = 50e-3/2.355 # calculate RMS from FWHM
-src_dzprime = 50e-3/2.355 # calculate RMS from FWHM
+src_dxprime = 0.52e-3/2.355 # calculate RMS from FWHM
+src_dzprime = 0.52e-3/2.355 # calculate RMS from FWHM
 
-source_y0 = - mh_p * np.cos(2*mh_theta + me_theta)
-source_z0 = mh_p * np.sin(2*mh_theta + me_theta)
+source_y0 = - m1_p * np.cos(m1_theta)
+source_z0 = m1_p * np.sin(m1_theta)
 
-me_y = abs(mh_q - me_p) * np.cos(me_theta)
-me_z = - abs(mh_q - me_p) * np.sin(me_theta)
+m2_y = (m1_q - m2_p) * np.cos(m1_theta)
+m2_z = (m1_q - m2_p) * np.sin(m1_theta)
 
-scr_y = me_y + me_q * np.cos(me_theta)
-scr_z = me_z + me_q * np.sin(me_theta)
 
-field_z1d = np.linspace(-10e-3, 10e-3, 11) # field size in z direction
+def build_beamline(field_z = 0e-3, scr_offset = 0e-3): # field size in z direction
 
-def build_beamline(nrays_per_source=1_000_000): # field size in z direction
+    # Update the source position based on the field size in z direction
+    source_y = source_y0 + field_z * np.sin(m1_theta)
+    source_z = source_z0 + field_z * np.cos(m1_theta)
+
+    ca = (m1_theta + field_z/m1_p)*m1_l
+
+    # Update the screen position based on the screen offset
+    scr_y = m2_y + (m2_q + scr_offset) * np.cos(m1_theta + 2 * m2_theta)
+    scr_z = m2_z + (m2_q + scr_offset) * np.sin(m1_theta + 2 * m2_theta)
+
+    # ===========================================================
 
     beamLine = raycing.BeamLine()
-    beamLine.gs = {}
-    for idx, field_z in enumerate(field_z1d):
-        source_y = source_y0 + field_z * np.sin(mh_theta)
-        source_z = source_z0 + field_z * np.cos(mh_theta)
-        ca = (mh_theta + field_z/mh_p)*mh_l
-        name = f"GS{idx:02d}"
-        beamLine.gs[name] = rsources.GeometricSource(
-            bl=beamLine,
-            name=name,
-            center=[0, source_y, source_z],
-            pitch=-(2*mh_theta+me_theta),
-            nrays=nrays_per_source,
-            dx=src_dx,
-            dz=src_dz,
-            dxprime=src_dxprime,
-            dzprime=src_dzprime)
 
-    beamLine.mask_h = rapts.RectangularAperture(
+    beamLine.geometricSource = rsources.GeometricSource(
         bl=beamLine,
-        name="Mask",
+        name="GS",
+        center=[0, source_y, source_z],
+        pitch=-m1_theta,
+        nrays=100_000,
+        dx=src_dx,
+        dz=src_dz,
+        dxprime=src_dxprime,
+        dzprime=src_dzprime)
+
+    beamLine.mask1 = rapts.RectangularAperture(
+        bl=beamLine,
+        name=r"Mask",
         center=[0, 0, 0],
-        opening=[-10.0, 10.0, -ca/2*1.5, ca/2*0.5],
+        opening=[-10.0, 10.0, -ca/2, ca/2*1.2],
         x=[1.0, 0.0, 0.0],
         z=[0.0, 0.0, 1.0])
 
-    beamLine.mh = roes.ConcaveHyperbolicCylindricalMirrorXMF(
+    beamLine.m1 = roes.ConcaveEllipticCylindricalMirrorXMF(
         bl=beamLine,
         name="HM",
         center=[0, 0, 0],
-        theta=mh_theta,
-        extraPitch=-(mh_theta+me_theta),
+        theta=m1_theta,
         limPhysX=[-10.0, 10.0],
-        limPhysY=[-mh_lu, mh_ld],
-        p=mh_p,
-        q=mh_q,
+        limPhysY=[-m1_lu, m1_ld],
+        p=m1_p,
+        q=m1_q,
         )
 
-    beamLine.me = roes.ConcaveEllipticCylindricalMirrorXMF(
+    beamLine.m2 = roes.ConcaveHyperbolicCylindricalMirrorXMF(
         bl=beamLine,
         name="EM",
-        center=[0, me_y, me_z],
-        theta=me_theta,
+        center=[0, m2_y, m2_z],
+        theta=m2_theta,
+        extraPitch = m1_theta + m2_theta,
         limPhysX=[-10.0, 10.0],
-        limPhysY=[-me_lu, me_ld],
-        p=me_p,
-        q=me_q,
+        limPhysY=[-m2_lu, m2_ld],
+        p=m2_p,
+        q=m2_q,
         )
 
     beamLine.screen = rscreens.Screen(
         bl=beamLine,
         name="SCR",
         center=[0, scr_y, scr_z],
-        z=[0, -np.sin(me_theta), np.cos(me_theta)],
+        z=[0, -np.sin(m1_theta + 2 * m2_theta), np.cos(m1_theta + 2 * m2_theta)]
     )
 
     return beamLine
 
 
 def run_process(beamLine):
-    
-    # Make an empty beam container and append each source beam into it
-    for idx, field_z in enumerate(field_z1d):
-        name = f"GS{idx:02d}"
-        src_beam = beamLine.gs[name].shine()
-        if idx == 0:
-            beam_total = src_beam
-        else:
-            beam_total.concatenate(src_beam)
-    
-    mask_h_local = beamLine.mask_h.propagate(
-        beam=beam_total)
+    geometricSource01beamGlobal01 = beamLine.geometricSource.shine()
 
-    mhParam01beamGlobal01, mhParam01beamLocal01 = beamLine.mh.reflect(
-        beam=beam_total)
+    mask1_local = beamLine.mask1.propagate(
+        beam=geometricSource01beamGlobal01)
 
-    meParam01beamGlobal01, meParam01beamLocal01 = beamLine.me.reflect(
-        beam=mhParam01beamGlobal01)
+    m1Param01beamGlobal01, m1Param01beamLocal01 = beamLine.m1.reflect(
+        beam=geometricSource01beamGlobal01)
+
+    m2Param01beamGlobal01, m2Param01beamLocal01 = beamLine.m2.reflect(
+        beam=m1Param01beamGlobal01)
 
     screen01beamLocal01 = beamLine.screen.expose(
-        beam=meParam01beamGlobal01)
+        beam=m2Param01beamGlobal01)
 
     outDict = {
-        'beam_total': beam_total,
-        'mask_h_local': mask_h_local,
-        'mhParam01beamGlobal01': mhParam01beamGlobal01,
-        'mhParam01beamLocal01': mhParam01beamLocal01,
-        'meParam01beamGlobal01': meParam01beamGlobal01,
-        'meParam01beamLocal01': meParam01beamLocal01,
+        'geometricSource01beamGlobal01': geometricSource01beamGlobal01,
+        'mask1Local': mask1_local,
+        'm1Param01beamGlobal01': m1Param01beamGlobal01,
+        'm1Param01beamLocal01': m1Param01beamLocal01,
+        'm2Param01beamGlobal01': m2Param01beamGlobal01,
+        'm2Param01beamLocal01': m2Param01beamLocal01,
         'screen01beamLocal01': screen01beamLocal01}
     beamLine.prepare_flow()
     
@@ -219,7 +215,7 @@ def define_plots():
     plots = []
 
     Source = xrtplot.XYCPlot(
-        beam=r"beam_total",
+        beam=r"geometricSource01beamGlobal01",
         xaxis=xrtplot.XYCAxis(
             label=r"x",
             fwhmFormatStr=r"%.3f",
@@ -239,8 +235,8 @@ def define_plots():
         aspect="equal")
     plots.append(Source)
 
-    MH_Footprint = xrtplot.XYCPlot(
-        beam=r"mhParam01beamLocal01",
+    M1Footprint = xrtplot.XYCPlot(
+        beam=r"m1Param01beamLocal01",
         xaxis=xrtplot.XYCAxis(
             label=r"x",
             fwhmFormatStr=r"%.3f",
@@ -250,7 +246,7 @@ def define_plots():
         yaxis=xrtplot.XYCAxis(
             label=r"y",
             fwhmFormatStr=r"%.3f",
-            limits=[-mh_lu*1e3, mh_ld*1e3],
+            limits=[-m1_lu*1e3, m1_ld*1e3],
             unit="um",
             factor=1e3),
         caxis=xrtplot.XYCAxis(
@@ -258,10 +254,10 @@ def define_plots():
             unit=r"eV"),
         title=r"Footprint",
         aspect="auto")
-    plots.append(MH_Footprint)
+    plots.append(M1Footprint)
     
-    ME_Footprint = xrtplot.XYCPlot(
-        beam=r"meParam01beamLocal01",
+    M2Footprint = xrtplot.XYCPlot(
+        beam=r"m2Param01beamLocal01",
         xaxis=xrtplot.XYCAxis(
             label=r"x",
             fwhmFormatStr=r"%.3f",
@@ -271,7 +267,7 @@ def define_plots():
         yaxis=xrtplot.XYCAxis(
             label=r"y",
             fwhmFormatStr=r"%.3f",
-            limits=[-me_lu*1e3, me_ld*1e3],
+            limits=[-m2_lu*1e3, m2_ld*1e3],
             unit="um",
             factor=1e3),
         caxis=xrtplot.XYCAxis(
@@ -279,7 +275,7 @@ def define_plots():
             unit=r"eV"),
         title=r"Footprint",
         aspect="auto")
-    plots.append(ME_Footprint)
+    plots.append(M2Footprint)
 
     Focus = xrtplot.XYCPlot(
         beam=r"screen01beamLocal01",
@@ -302,20 +298,31 @@ def define_plots():
 
     return plots
 
+
 def main():
-    
-    beamLine = build_beamline()
-        
-    E0 = list(beamLine.gs['GS02'].energies)[0]
-    beamLine.alignE = E0
-    plots = define_plots()
-    xrtrun.run_ray_tracing(
-        plots=plots,
-        repeats=1,
-        processes=1,
-        backend=r"raycing",
-        beamLine=beamLine)
-    beamLine.glow()
+
+    fwhm_x_um = []
+    fwhm_z_um = []
+    field_z_um = np.linspace(-3, -3, 1)
+    scr_offsets_um = np.linspace(-0, -0, 1)
+    for field_z in field_z_um * 1e-3:
+        for scr_offset in scr_offsets_um * 1e-3:
+
+            beamLine = build_beamline(field_z, scr_offset)
+
+            E0 = list(beamLine.geometricSource.energies)[0]
+            beamLine.alignE = E0
+            plots = define_plots()
+            xrtrun.run_ray_tracing(
+                plots=plots,
+                repeats=1,
+                processes=0,
+                backend=r"raycing",
+                beamLine=beamLine)
+
+            # beamLine.glow()
+            fwhm_x_um.append(beamLine.fwhm_x*1e3)
+            fwhm_z_um.append(beamLine.fwhm_z*1e3)
 
     # === FWHM at screen (local coordinates) ==============================
 
@@ -324,7 +331,7 @@ def main():
     # XRT typically flags good rays with state == 1
     good = b.state == 1
     print(f"[good]  good = {np.sum(good)}")
-    
+
     x = b.x[good]   # meters
     z = b.z[good]   # meters
     xr = (np.nanmin(x), np.nanmax(x))
@@ -332,10 +339,11 @@ def main():
 
     fwhm_x, xL, xR = fwhm_from_samples(x, bins=min(round(np.sum(good)/100), 512), range=xr, baseline=0.0)
     fwhm_z, zL, zR = fwhm_from_samples(z, bins=min([round(np.sum(good)/100), 512]), range=zr, baseline=0.0)
-
+    cz = 0.5 * (zL + zR)
     print(f"[Screen @ local]  FWHM_x = {fwhm_x:.6e} mm  ({fwhm_x*1e3:.3f} µm)")
     print(f"[Screen @ local]  FWHM_z = {fwhm_z:.6e} mm  ({fwhm_z*1e3:.3f} µm)")
-    
+    print(f"[Screen @ local]  cz = {cz:.6e} mm")
+
     # Combined figure: scatter (x, z) and histogram of z
     fig, ax = plt.subplots(1, 2, figsize=(12, 5))
 
@@ -355,6 +363,12 @@ def main():
 
     plt.tight_layout()
     plt.show()
+
+    # =====================================================================
+
+    print("Field position in z direction (µm):", field_z_um)
+    print("FWHM X (µm):", fwhm_x_um)
+    print("FWHM Z (µm):", fwhm_z_um)
 
 
 if __name__ == '__main__':

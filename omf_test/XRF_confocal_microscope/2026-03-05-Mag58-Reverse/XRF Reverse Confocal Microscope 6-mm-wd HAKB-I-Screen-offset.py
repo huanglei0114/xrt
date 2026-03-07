@@ -3,8 +3,10 @@
 import numpy as np
 import sys
 import os
-
+# sys.path.append(r"/Users/lhuang/Documents/GitHub/xrt")
+# sys.path.append(r"c:/GitHub/xrt")
 sys.path.append(os.path.join('..', '..', '..'))
+# from lei_oes import ConvexHyperbolicCylindricalMirrorXMF
 import xrt.backends.raycing.sources as rsources
 import xrt.backends.raycing.screens as rscreens
 import xrt.backends.raycing.materials as rmats
@@ -51,103 +53,110 @@ def _fwhm_from_hist(x, bins=201, rng=None, baseline=0.0):
         j2 = i_right[0] + i_max
         j1 = max(j2 - 1, i_max)
         xR = c[j1] + (half - h[j1]) * (c[j2] - c[j1]) / (h[j2] - h[j1] + 1e-30)
+        
+    # Use the centoid of the histogram as the center of the distribution
+    cz = np.sum(c * h) / np.sum(h) if np.sum(h) > 0 else 0.0
 
-    return (xR - xL), xL, xR
+    return (xR - xL), xL, xR, cz
 
 
 def fwhm_from_samples(samples, bins=201, range=None, baseline=0.0):
     """Tiny convenience wrapper."""
     return _fwhm_from_hist(np.asarray(samples, dtype=float),
                            bins=bins, rng=range, baseline=baseline)
+
+
 # ===========================================================
 
-mh_theta = 4.6097e-3
-mh_p = 12.6228
-mh_q = 25.2116
-mh_lu = 6.6207
-mh_ld = 9.2254
-mh_l = mh_lu + mh_ld
+m1_theta = 4.7789e-3
+m1_p = 1462.3153
+m1_q = 50.2872
+m1_lu = 14.8386
+m1_ld = 14.8386
+m1_l = m1_lu + m1_ld
 
-me_theta = 4.7789e-3
-me_p = 50.2872
-me_q = 1462.3153
-me_lu = 14.8386
-me_ld = 14.8386
-me_l = me_lu + me_ld
+m2_theta = 4.6097e-3
+m2_p = 25.2116
+m2_q = 12.6228
+m2_lu = 9.2254
+m2_ld = 6.6207
 
-src_dx = 0.5e-3/2.355 # calculate RMS from FWHM
-src_dz = 0.5e-3/2.355 # calculate RMS from FWHM
+src_dx = 145.2e-3/5/2.355 # calculate RMS from FWHM
+src_dz = 145.2e-3/5/2.355 # calculate RMS from FWHM
 
-src_dxprime = 50e-3/2.355 # calculate RMS from FWHM
-src_dzprime = 50e-3/2.355 # calculate RMS from FWHM
+src_dxprime = 0.52e-3/2.355 # calculate RMS from FWHM
+src_dzprime = 0.52e-3/2.355 # calculate RMS from FWHM
 
-source_y0 = - mh_p * np.cos(2*mh_theta + me_theta)
-source_z0 = mh_p * np.sin(2*mh_theta + me_theta)
+source_y0 = - m1_p * np.cos(m1_theta)
+source_z0 = m1_p * np.sin(m1_theta)
 
-me_y = abs(mh_q - me_p) * np.cos(me_theta)
-me_z = - abs(mh_q - me_p) * np.sin(me_theta)
+m2_y = (m1_q - m2_p) * np.cos(m1_theta)
+m2_z = (m1_q - m2_p) * np.sin(m1_theta)
 
-scr_y = me_y + me_q * np.cos(me_theta)
-scr_z = me_z + me_q * np.sin(me_theta)
 
-def build_beamline(field_z = 0e-3): # field size in z direction
+def build_beamline(field_z = 0e-3, scr_offset = 0e-3): # field size in z direction
 
-    source_y = source_y0 + field_z * np.sin(mh_theta)
-    source_z = source_z0 + field_z * np.cos(mh_theta)
-    
-    ca = (mh_theta + field_z/mh_p)*mh_l
-   
+    # Update the source position based on the field size in z direction
+    source_y = source_y0 + field_z * np.sin(m1_theta)
+    source_z = source_z0 + field_z * np.cos(m1_theta)
+
+    ca = (m1_theta + field_z/m1_p)*m1_l
+
+    # Update the screen position based on the screen offset
+    scr_y = m2_y + (m2_q + scr_offset) * np.cos(m1_theta + 2 * m2_theta)
+    scr_z = m2_z + (m2_q + scr_offset) * np.sin(m1_theta + 2 * m2_theta)
+
     # ===========================================================
-    
+
     beamLine = raycing.BeamLine()
 
     beamLine.geometricSource = rsources.GeometricSource(
         bl=beamLine,
         name="GS",
         center=[0, source_y, source_z],
-        pitch=-(2*mh_theta+me_theta),
-        nrays=1_000_000,
+        pitch=-m1_theta,
+        nrays=500_000,
         dx=src_dx,
         dz=src_dz,
         dxprime=src_dxprime,
         dzprime=src_dzprime)
 
-    beamLine.mask_h = rapts.RectangularAperture(
+    beamLine.mask1 = rapts.RectangularAperture(
         bl=beamLine,
-        name="Mask",
+        name=r"Mask",
         center=[0, 0, 0],
-        opening=[-10.0, 10.0, -ca/2*1.5, ca/2*0.7],
+        opening=[-10.0, 10.0, -ca/2, ca/2*1.2],
         x=[1.0, 0.0, 0.0],
         z=[0.0, 0.0, 1.0])
 
-    beamLine.mh = roes.ConcaveHyperbolicCylindricalMirrorXMF(
+    beamLine.m1 = roes.ConcaveEllipticCylindricalMirrorXMF(
         bl=beamLine,
         name="HM",
         center=[0, 0, 0],
-        theta=mh_theta,
-        extraPitch=-(mh_theta+me_theta),
+        theta=m1_theta,
         limPhysX=[-10.0, 10.0],
-        limPhysY=[-mh_lu, mh_ld],
-        p=mh_p,
-        q=mh_q,
+        limPhysY=[-m1_lu, m1_ld],
+        p=m1_p,
+        q=m1_q,
         )
-    
-    beamLine.me = roes.ConcaveEllipticCylindricalMirrorXMF(
+
+    beamLine.m2 = roes.ConcaveHyperbolicCylindricalMirrorXMF(
         bl=beamLine,
         name="EM",
-        center=[0, me_y, me_z],
-        theta=me_theta,
+        center=[0, m2_y, m2_z],
+        theta=m2_theta,
+        extraPitch = m1_theta + m2_theta,
         limPhysX=[-10.0, 10.0],
-        limPhysY=[-me_lu, me_ld],
-        p=me_p,
-        q=me_q,
+        limPhysY=[-m2_lu, m2_ld],
+        p=m2_p,
+        q=m2_q,
         )
-    
+
     beamLine.screen = rscreens.Screen(
         bl=beamLine,
         name="SCR",
         center=[0, scr_y, scr_z],
-        z=[0, -np.sin(me_theta), np.cos(me_theta)]
+        z=[0, -np.sin(m1_theta+2*m2_theta), np.cos(m1_theta+2*m2_theta)]
     )
 
     return beamLine
@@ -156,25 +165,25 @@ def build_beamline(field_z = 0e-3): # field size in z direction
 def run_process(beamLine):
     geometricSource01beamGlobal01 = beamLine.geometricSource.shine()
 
-    mask_h_local = beamLine.mask_h.propagate(
+    mask1_local = beamLine.mask1.propagate(
         beam=geometricSource01beamGlobal01)
 
-    mhParam01beamGlobal01, mhParam01beamLocal01 = beamLine.mh.reflect(
+    m1Param01beamGlobal01, m1Param01beamLocal01 = beamLine.m1.reflect(
         beam=geometricSource01beamGlobal01)
 
-    meParam01beamGlobal01, meParam01beamLocal01 = beamLine.me.reflect(
-        beam=mhParam01beamGlobal01)
+    m2Param01beamGlobal01, m2Param01beamLocal01 = beamLine.m2.reflect(
+        beam=m1Param01beamGlobal01)
 
     screen01beamLocal01 = beamLine.screen.expose(
-        beam=meParam01beamGlobal01)
+        beam=m2Param01beamGlobal01)
 
     outDict = {
         'geometricSource01beamGlobal01': geometricSource01beamGlobal01,
-        'mask_h_local': mask_h_local,
-        'mhParam01beamGlobal01': mhParam01beamGlobal01,
-        'mhParam01beamLocal01': mhParam01beamLocal01,
-        'meParam01beamGlobal01': meParam01beamGlobal01,
-        'meParam01beamLocal01': meParam01beamLocal01,
+        'mask1Local': mask1_local,
+        'm1Param01beamGlobal01': m1Param01beamGlobal01,
+        'm1Param01beamLocal01': m1Param01beamLocal01,
+        'm2Param01beamGlobal01': m2Param01beamGlobal01,
+        'm2Param01beamLocal01': m2Param01beamLocal01,
         'screen01beamLocal01': screen01beamLocal01}
     beamLine.prepare_flow()
     
@@ -189,8 +198,8 @@ def run_process(beamLine):
     xr = (np.nanmin(x), np.nanmax(x))
     zr = (np.nanmin(z), np.nanmax(z))
 
-    fwhm_x, xL, xR = fwhm_from_samples(x, bins=min([round(np.sum(good)/100), 512]), range=xr, baseline=0.0)
-    fwhm_z, zL, zR = fwhm_from_samples(z, bins=min([round(np.sum(good)/100), 512]), range=zr, baseline=0.0)
+    fwhm_x, xL, xR, _ = fwhm_from_samples(x, bins=min([round(np.sum(good)/100), 512]), range=xr, baseline=0.0)
+    fwhm_z, zL, zR, _ = fwhm_from_samples(z, bins=min([round(np.sum(good)/100), 512]), range=zr, baseline=0.0)
 
     print(f"[Screen @ local]  FWHM_x = {fwhm_x:.6e} mm  ({fwhm_x*1e3:.3f} µm)")
     print(f"[Screen @ local]  FWHM_z = {fwhm_z:.6e} mm  ({fwhm_z*1e3:.3f} µm)")
@@ -203,7 +212,6 @@ def run_process(beamLine):
     return outDict
 
 rrun.run_process = run_process
-
 
 
 def define_plots():
@@ -230,8 +238,8 @@ def define_plots():
         aspect="equal")
     plots.append(Source)
 
-    MH_Footprint = xrtplot.XYCPlot(
-        beam=r"mhParam01beamLocal01",
+    M1Footprint = xrtplot.XYCPlot(
+        beam=r"m1Param01beamLocal01",
         xaxis=xrtplot.XYCAxis(
             label=r"x",
             fwhmFormatStr=r"%.3f",
@@ -241,7 +249,7 @@ def define_plots():
         yaxis=xrtplot.XYCAxis(
             label=r"y",
             fwhmFormatStr=r"%.3f",
-            limits=[-mh_lu*1e3, mh_ld*1e3],
+            limits=[-m1_lu*1e3, m1_ld*1e3],
             unit="um",
             factor=1e3),
         caxis=xrtplot.XYCAxis(
@@ -249,10 +257,10 @@ def define_plots():
             unit=r"eV"),
         title=r"Footprint",
         aspect="auto")
-    plots.append(MH_Footprint)
+    plots.append(M1Footprint)
     
-    ME_Footprint = xrtplot.XYCPlot(
-        beam=r"meParam01beamLocal01",
+    M2Footprint = xrtplot.XYCPlot(
+        beam=r"m2Param01beamLocal01",
         xaxis=xrtplot.XYCAxis(
             label=r"x",
             fwhmFormatStr=r"%.3f",
@@ -262,7 +270,7 @@ def define_plots():
         yaxis=xrtplot.XYCAxis(
             label=r"y",
             fwhmFormatStr=r"%.3f",
-            limits=[-me_lu*1e3, me_ld*1e3],
+            limits=[-m2_lu*1e3, m2_ld*1e3],
             unit="um",
             factor=1e3),
         caxis=xrtplot.XYCAxis(
@@ -270,7 +278,7 @@ def define_plots():
             unit=r"eV"),
         title=r"Footprint",
         aspect="auto")
-    plots.append(ME_Footprint)
+    plots.append(M2Footprint)
 
     Focus = xrtplot.XYCPlot(
         beam=r"screen01beamLocal01",
@@ -293,76 +301,86 @@ def define_plots():
 
     return plots
 
+
 def main():
-    
+
     fwhm_x_um = []
     fwhm_z_um = []
-    field_z_um = np.linspace(5, 5, 1)
-    for field_z in field_z_um * 1e-3:
-        beamLine = build_beamline(field_z)
-        
-        E0 = list(beamLine.geometricSource.energies)[0]
-        beamLine.alignE = E0
-        plots = define_plots()
-        xrtrun.run_ray_tracing(
-            plots=plots,
-            repeats=1,
-            processes=1,
-            backend=r"raycing",
-            beamLine=beamLine)
-        beamLine.glow()
-        fwhm_x_um.append(beamLine.fwhm_x*1e3)
-        fwhm_z_um.append(beamLine.fwhm_z*1e3)
-    
-    return fwhm_x_um, fwhm_z_um
+    field_z_um = np.linspace(-900, 900, 21)
+    scr_offsets_um = np.linspace(-2000, 2000, 11)
 
-    # === FWHM at screen (local coordinates) ==============================
+    cz2d = np.zeros((len(field_z_um), len(scr_offsets_um)))
+    fwhm_z2d = np.zeros((len(field_z_um), len(scr_offsets_um)))
+    for idx_z, field_z in enumerate(field_z_um * 1e-3):
+        for idx_so, scr_offset in enumerate(scr_offsets_um * 1e-3):
 
-    # Keep only good rays
-    b = beamLine.screen01beamLocal01
-    # XRT typically flags good rays with state == 1
-    good = b.state == 1
-    print(f"[good]  good = {np.sum(good)}")
-    
-    x = b.x[good]   # meters
-    z = b.z[good]   # meters
-    xr = (np.nanmin(x), np.nanmax(x))
-    zr = (np.nanmin(z), np.nanmax(z))
+            beamLine = build_beamline(field_z, scr_offset)
 
-    fwhm_x, xL, xR = fwhm_from_samples(x, bins=min(round(np.sum(good)/100), 512), range=xr, baseline=0.0)
-    fwhm_z, zL, zR = fwhm_from_samples(z, bins=min([round(np.sum(good)/100), 512]), range=zr, baseline=0.0)
+            E0 = list(beamLine.geometricSource.energies)[0]
+            beamLine.alignE = E0
+            # plots = define_plots()
+            xrtrun.run_ray_tracing(
+                #plots=plots,
+                repeats=1,
+                processes=1,
+                backend=r"raycing",
+                beamLine=beamLine)
+            # beamLine.glow()
+            fwhm_x_um.append(beamLine.fwhm_x*1e3)
+            fwhm_z_um.append(beamLine.fwhm_z*1e3)
 
-    print(f"[Screen @ local]  FWHM_x = {fwhm_x:.6e} mm  ({fwhm_x*1e3:.3f} µm)")
-    print(f"[Screen @ local]  FWHM_z = {fwhm_z:.6e} mm  ({fwhm_z*1e3:.3f} µm)")
-    
-    # Combined figure: scatter (x, z) and histogram of z
-    fig, ax = plt.subplots(1, 2, figsize=(12, 5))
+            # === FWHM at screen (local coordinates) ==============================
 
-    # Scatter plot of (x, z)
-    ax[0].scatter(x*1e3, z*1e3, s=1)
-    ax[0].set_xlabel("x (µm)")
-    ax[0].set_ylabel("z (µm)")
-    ax[0].set_title("Scatter plot of (x, z) at the screen")
-    ax[0].grid()
+            # Keep only good rays
+            b = beamLine.screen01beamLocal01
+            # XRT typically flags good rays with state == 1
+            good = b.state == 1
+            print(f"[good]  good = {np.sum(good)}")
 
-    # Histogram of z
-    ax[1].hist(z*1e3, bins=100, range=(zr[0]*1e3, zr[1]*1e3))
-    ax[1].set_xlabel("z (µm)")
-    ax[1].set_ylabel("Counts")
-    ax[1].set_title("Histogram of z at the screen")
-    ax[1].grid()
+            x = b.x[good]   # meters
+            z = b.z[good]   # meters
+            xr = (np.nanmin(x), np.nanmax(x))
+            zr = (np.nanmin(z), np.nanmax(z))
+
+            fwhm_x, _, _, _ = fwhm_from_samples(x, bins=min(round(np.sum(good)/100), 512), range=xr, baseline=0.0)
+            fwhm_z, zL, zR, cz = fwhm_from_samples(z, bins=min([round(np.sum(good)/100), 512]), range=zr, baseline=0.0)
+
+            print(f"[Screen @ local]  FWHM_x = {fwhm_x:.6e} mm  ({fwhm_x*1e3:.3f} µm)")
+            print(f"[Screen @ local]  FWHM_z = {fwhm_z:.6e} mm  ({fwhm_z*1e3:.3f} µm)")
+            print(f"[Screen @ local]  cz = {cz:.6e} mm  ({cz*1e3:.3f} µm)")
+
+            cz2d[idx_z, idx_so] = cz
+            fwhm_z2d[idx_z, idx_so] = fwhm_z
+
+    # Plotting the results
+    fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+
+    field_z2d_um, scr_offsets2d_um = np.meshgrid(field_z_um, scr_offsets_um, indexing='ij')
+    c = axes[0].pcolormesh(scr_offsets2d_um, field_z2d_um, fwhm_z2d*1e3, shading="auto", cmap="viridis")
+    axes[0].set_xlabel('Screen Offset [µm]')
+    axes[0].set_ylabel('Field in Z [µm]')
+    axes[0].set_title('FWHM in Z at Screen')
+    fig.colorbar(c, ax=axes[0], label='FWHM Z [µm]')
+    c.set_clim(vmin=0, vmax=1.0)
+
+    c = axes[1].pcolormesh(scr_offsets2d_um, cz2d*1e3, fwhm_z2d*1e3, shading="auto", cmap="plasma")
+    axes[1].set_xlabel("Screen Offset [µm]")
+    axes[1].set_ylabel("Center in Z [µm]")
+    axes[1].set_title("FWHM in Z at Screen")
+    fig.colorbar(c, ax=axes[1], label="FWHM Z [µm]")
+    c.set_clim(vmin=0, vmax=1.0)
 
     plt.tight_layout()
+
+    # Save the figure in the current script directory
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    fig_path = os.path.join(
+        script_dir, "XRF Reverse Confocal Microscope 6-mm-wd HAKB-I-Screen-offset.png"
+    )
+    fig.savefig(fig_path)
+    print(f"Figure saved to: {fig_path}")
+
     plt.show()
-    
-    # =====================================================================
-    
-    print("Field position in z direction (µm):", field_z_um)
-    print("FWHM X (µm):", fwhm_x_um)
-    print("FWHM Z (µm):", fwhm_z_um)
-    
-
-
 
 if __name__ == '__main__':
     main()

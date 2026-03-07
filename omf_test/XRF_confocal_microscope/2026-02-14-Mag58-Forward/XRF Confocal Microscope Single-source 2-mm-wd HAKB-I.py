@@ -94,11 +94,11 @@ def build_beamline(field_z = 0e-3): # field size in z direction
 
     source_y = source_y0 + field_z * np.sin(mh_theta)
     source_z = source_z0 + field_z * np.cos(mh_theta)
-    
+
     ca = (mh_theta + field_z/mh_p)*mh_l
-   
+
     # ===========================================================
-    
+
     beamLine = raycing.BeamLine()
 
     beamLine.geometricSource = rsources.GeometricSource(
@@ -131,7 +131,7 @@ def build_beamline(field_z = 0e-3): # field size in z direction
         p=mh_p,
         q=mh_q,
         )
-    
+
     beamLine.me = roes.ConcaveEllipticCylindricalMirrorXMF(
         bl=beamLine,
         name="EM",
@@ -142,12 +142,12 @@ def build_beamline(field_z = 0e-3): # field size in z direction
         p=me_p,
         q=me_q,
         )
-    
+
     beamLine.screen = rscreens.Screen(
         bl=beamLine,
         name="SCR",
         center=[0, scr_y, scr_z],
-        z=[0, -np.sin(mh_theta+2*me_theta), np.cos(mh_theta+2*me_theta)]
+        z=[0, -np.sin(me_theta), np.cos(me_theta)],
     )
 
     return beamLine
@@ -203,7 +203,6 @@ def run_process(beamLine):
     return outDict
 
 rrun.run_process = run_process
-
 
 
 def define_plots():
@@ -360,8 +359,6 @@ def main():
     print("Field position in z direction (µm):", field_z_um)
     print("FWHM X (µm):", fwhm_x_um)
     print("FWHM Z (µm):", fwhm_z_um)
-    
-
 
 
 if __name__ == '__main__':
