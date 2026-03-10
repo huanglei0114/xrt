@@ -94,7 +94,7 @@ mh_z = abs(me_q - mh_p) * np.sin(me_theta)
 scr_y = mh_y + mh_q * np.cos(me_theta - 2 * mh_theta)
 scr_z = mh_z + mh_q * np.sin(me_theta - 2 * mh_theta)
 
-field_z1d = np.linspace(-5e-3, 5e-3, 11)  # field size in z direction
+field_z1d = np.linspace(-7.5e-3, 7.5e-3, 11)  # field size in z direction
 
 
 def build_beamline(nrays_per_source=1_000_000):  # field size in z direction
