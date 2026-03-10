@@ -3,6 +3,8 @@
 import numpy as np
 import sys
 import os
+import json
+from pathlib import Path
 
 sys.path.append(os.path.join('..', '..', '..'))
 import xrt.backends.raycing.sources as rsources
@@ -63,19 +65,41 @@ def fwhm_from_samples(samples, bins=201, range=None, baseline=0.0):
 
 # ===========================================================
 
-mh_theta = 3.8e-3
-mh_p = 36.7479
-mh_q = 72.3721
-mh_lu = 14.6677
-mh_ld = 18.7422
-mh_l = mh_lu + mh_ld
+# load the XRF microscope geometry from the JSON file
+script_dir = Path(__file__).resolve().parent
+config_path = script_dir / 'Mag=96 AKB-I Geometry Config.json'
 
-me_theta = 4e-3
-me_p = 121.3310
-me_q = 5914.3018
-me_lu = 26.2126
-me_ld = 26.2126
+with config_path.open('r') as f:
+    config = json.load(f)
+
+mh_theta = config['mh_theta']
+mh_p = config['mh_q'] * 1e3
+mh_q = config['mh_p'] * 1e3
+mh_lu = config['mh_ld'] * 1e3
+mh_ld = config['mh_lu'] * 1e3
+
+me_theta = config['me_theta']
+me_p = config['me_q'] * 1e3
+me_q = config['me_p'] * 1e3
+me_lu = config['me_ld'] * 1e3
+me_ld = config['me_lu'] * 1e3
+
+mh_l = mh_lu + mh_ld
 me_l = me_lu + me_ld
+
+# mh_theta = 3.8e-3
+# mh_p = 36.7479
+# mh_q = 72.3721
+# mh_lu = 14.6677
+# mh_ld = 18.7422
+# mh_l = mh_lu + mh_ld
+
+# me_theta = 4e-3
+# me_p = 121.3310
+# me_q = 5914.3018
+# me_lu = 26.2126
+# me_ld = 26.2126
+# me_l = me_lu + me_ld
 
 src_dx = 1.0e-3 / 2.355  # calculate RMS from FWHM
 src_dz = 1.0e-3 / 2.355  # calculate RMS from FWHM
@@ -196,13 +220,18 @@ def run_process(beamLine):
     # XRT typically flags good rays with state == 1
     good = (b.state == 1)
 
-    x = b.x[good]   # meters
-    z = b.z[good]   # meters
-    xr = (np.nanmin(x), np.nanmax(x))
-    zr = (np.nanmin(z), np.nanmax(z))
+    if not np.any(good):
+        fwhm_x = np.nan
+        fwhm_z = np.nan
+    else:
+        x = b.x[good]   # meters
+        z = b.z[good]   # meters
+        xr = (np.nanmin(x), np.nanmax(x))
+        zr = (np.nanmin(z), np.nanmax(z))
+        n_bins = max(2, min([round(np.sum(good) / 100), 512]))
 
-    fwhm_x, xL, xR = fwhm_from_samples(x, bins=min([round(np.sum(good)/100), 512]), range=xr, baseline=0.0)
-    fwhm_z, zL, zR = fwhm_from_samples(z, bins=min([round(np.sum(good)/100), 512]), range=zr, baseline=0.0)
+        fwhm_x, xL, xR = fwhm_from_samples(x, bins=n_bins, range=xr, baseline=0.0)
+        fwhm_z, zL, zR = fwhm_from_samples(z, bins=n_bins, range=zr, baseline=0.0)
 
     print(f"[Screen @ local]  FWHM_x = {fwhm_x:.6e} mm  ({fwhm_x*1e3:.3f} µm)")
     print(f"[Screen @ local]  FWHM_z = {fwhm_z:.6e} mm  ({fwhm_z*1e3:.3f} µm)")
