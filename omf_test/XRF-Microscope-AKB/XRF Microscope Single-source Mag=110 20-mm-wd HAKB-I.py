@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+import json
+from pathlib import Path
+
 import numpy as np
 import sys
 import os
@@ -64,20 +67,28 @@ def fwhm_from_samples(samples, bins=201, range=None, baseline=0.0):
 
 
 # ===========================================================
+# load the XRF microscope geometry from the JSON file
+script_dir = Path(__file__).resolve().parent
+config_path = script_dir / "Mag=110 AKB-I Geometry Config.json"
 
-mh_theta = 3.8e-3
-mh_p = 36.7479
-mh_q = 72.3721
-mh_lu = 14.6677
-mh_ld = 18.7422
+with config_path.open("r") as f:
+    config = json.load(f)
+
+mh_theta = config["mh_theta"]
+mh_p = config["mh_q"] * 1e3
+mh_q = config["mh_p"] * 1e3
+mh_lu = config["mh_ld"] * 1e3
+mh_ld = config["mh_lu"] * 1e3
+
+me_theta = config["me_theta"]
+me_p = config["me_q"] * 1e3
+me_q = config["me_p"] * 1e3
+me_lu = config["me_ld"] * 1e3
+me_ld = config["me_lu"] * 1e3
+
 mh_l = mh_lu + mh_ld
-
-me_theta = 4e-3
-me_p = 121.3310
-me_q = 5914.3018
-me_lu = 26.2126
-me_ld = 26.2126
 me_l = me_lu + me_ld
+
 
 src_dx = 1.0e-3 / 2.355  # calculate RMS from FWHM
 src_dz = 1.0e-3 / 2.355  # calculate RMS from FWHM
@@ -300,7 +311,7 @@ def main():
 
     fwhm_x_um = []
     fwhm_z_um = []
-    field_z_um = np.linspace(10, 10, 1)
+    field_z_um = np.linspace(0, 0, 1)
     for field_z in field_z_um * 1e-3:
         beamLine = build_beamline(field_z)
 
