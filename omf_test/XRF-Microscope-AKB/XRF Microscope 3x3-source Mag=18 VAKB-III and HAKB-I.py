@@ -69,26 +69,53 @@ def fwhm_from_samples(samples, bins=201, range=None, baseline=0.0):
 # ===========================================================
 
 # load the XRF microscope geometry from the JSON file
+
+# VAKB-III geometry config
 script_dir = Path(__file__).resolve().parent
 config_path = script_dir / "Mag=18 AKB-III Geometry Config.json"
 
 with config_path.open("r") as f:
     config = json.load(f)
 
-mh_theta = config["mh_theta"]
-mh_p = config["mh_q"] * 1e3
-mh_q = config["mh_p"] * 1e3
-mh_lu = config["mh_ld"] * 1e3
-mh_ld = config["mh_lu"] * 1e3
+mvh_theta = config["mh_theta"]
+mvh_p = config["mh_q"] * 1e3
+mvh_q = config["mh_p"] * 1e3
+mvh_lu = config["mh_ld"] * 1e3
+mvh_ld = config["mh_lu"] * 1e3
 
-me_theta = config["me_theta"]
-me_p = config["me_q"] * 1e3
-me_q = config["me_p"] * 1e3
-me_lu = config["me_ld"] * 1e3
-me_ld = config["me_lu"] * 1e3
+mve_theta = config["me_theta"]
+mve_p = config["me_q"] * 1e3
+mve_q = config["me_p"] * 1e3
+mve_lu = config["me_ld"] * 1e3
+mve_ld = config["me_lu"] * 1e3
 
-mh_l = mh_lu + mh_ld
-me_l = me_lu + me_ld
+mvh_l = mvh_lu + mvh_ld
+mve_l = mve_lu + mve_ld
+
+
+# HAKB-I geometry config
+script_dir = Path(__file__).resolve().parent
+config_path = script_dir / "Mag=18 AKB-I Geometry Config.json"
+
+with config_path.open("r") as f:
+    config = json.load(f)
+
+mhh_theta = config["mh_theta"]
+mhh_p = config["mh_q"] * 1e3
+mhh_q = config["mh_p"] * 1e3
+mhh_lu = config["mh_ld"] * 1e3
+mhh_ld = config["mh_lu"] * 1e3
+
+mhe_theta = config["me_theta"]
+mhe_p = config["me_q"] * 1e3
+mhe_q = config["me_p"] * 1e3
+mhe_lu = config["me_ld"] * 1e3
+mhe_ld = config["me_lu"] * 1e3
+
+mhh_l = mhh_lu + mhh_ld
+mhe_l = mhe_lu + mhe_ld
+
+# ===========================================================
 
 src_dx = 1.0e-3 / 2.355  # calculate RMS from FWHM
 src_dz = 1.0e-3 / 2.355  # calculate RMS from FWHM
@@ -96,31 +123,85 @@ src_dz = 1.0e-3 / 2.355  # calculate RMS from FWHM
 src_dxprime = 50e-3 / 2.355  # calculate RMS from FWHM
 src_dzprime = 50e-3 / 2.355  # calculate RMS from FWHM
 
-source_y0 = -me_p * np.cos(me_theta)
-source_z0 = me_p * np.sin(me_theta)
+source_x0 = 0
+source_y0 = 0
+source_z0 = 0
 
-mh_y = abs(me_q - mh_p) * np.cos(me_theta)
-mh_z = abs(me_q - mh_p) * np.sin(me_theta)
+beam_angle_x = 0
+beam_angle_z = 0
 
-scr_y = mh_y + mh_q * np.cos(me_theta - 2 * mh_theta)
-scr_z = mh_z + mh_q * np.sin(me_theta - 2 * mh_theta)
+mhh_x = 0
+mhh_y = mhh_p
+mhh_z = 0
 
-field_z1d = np.linspace(-50e-3, 50e-3, 11)  # field size in z direction
+beam_angle_x += mhh_theta * 2
+beam_angle_z += 0
 
+# screen_x = mhh_x + mhh_p * np.sin(beam_angle_x)
+# screen_y = mhh_y + mhh_p * np.cos(beam_angle_x)
+# screen_z = mhh_z + 0
+
+dist = abs(mhe_p - mhh_q)
+
+mhe_x = mhh_x + dist * np.sin(beam_angle_x)
+mhe_y = mhh_y + dist * np.cos(beam_angle_x)
+mhe_z = mhh_z + 0
+
+beam_angle_x += mhe_theta * 2
+beam_angle_z += 0
+
+# screen_x = mhe_x + mhe_q * np.sin(beam_angle_x)
+# screen_y = mhe_y + mhe_q * np.cos(beam_angle_x)
+# screen_z = mhe_z + 0
+
+dist = abs(mve_p - dist - mhh_p)
+
+mve_x = mhe_x + dist * np.sin(beam_angle_x)
+mve_y = mhe_y + dist * np.cos(beam_angle_x)
+mve_z = mhe_z + 0
+
+beam_angle_x += 0
+beam_angle_z += mve_theta * 2
+
+# screen_x = mve_x + (mve_q * np.cos(beam_angle_z)) * np.sin(beam_angle_x)
+# screen_y = mve_y + (mve_q * np.cos(beam_angle_z)) * np.cos(beam_angle_x)
+# screen_z = mve_z + mve_q * np.sin(beam_angle_z)
+
+dist = abs(mve_q - mvh_p)
+
+mvh_x = mve_x + (dist * np.cos(beam_angle_z)) * np.sin(beam_angle_x)
+mvh_y = mve_y + (dist * np.cos(beam_angle_z)) * np.cos(beam_angle_x)
+mvh_z = mve_z + dist * np.sin(beam_angle_z)
+
+beam_angle_x += 0
+beam_angle_z += -mvh_theta * 2
+
+screen_x = mvh_x + (mvh_q * np.cos(beam_angle_z)) * np.sin(beam_angle_x)
+screen_y = mvh_y + (mvh_q * np.cos(beam_angle_z)) * np.cos(beam_angle_x)
+screen_z = mvh_z + mvh_q * np.sin(beam_angle_z)
+
+
+field_x1d = np.linspace(-50e-3, 50e-3, 21)  # field size in x direction
+field_z1d = np.linspace(0e-3, 0e-3, 1)  # field size in z direction
+
+field_x2d, field_z2d = np.meshgrid(field_x1d, field_z1d)  # create 2D grid of field points
 
 def build_beamline(nrays_per_source=1_000_000):  # field size in z direction
 
     beamLine = raycing.BeamLine()
     beamLine.gs = {}
-    for idx, field_z in enumerate(field_z1d):
-        source_y = source_y0 + field_z * np.sin(me_theta)
-        source_z = source_z0 + field_z * np.cos(me_theta)
+    for idx, (field_x, field_z) in enumerate(zip(field_x2d.flatten(), field_z2d.flatten())):
+
+        source_x = source_x0 + field_x
+        source_y = source_y0
+        source_z = source_z0 + field_z
+
         name = f"GS{idx:02d}"
         beamLine.gs[name] = rsources.GeometricSource(
             bl=beamLine,
             name=name,
-            center=[0, source_y, source_z],
-            pitch=-me_theta,
+            center=[source_x, source_y, source_z],
+            pitch=0,
             nrays=nrays_per_source,
             dx=src_dx,
             dz=src_dz,
@@ -129,44 +210,99 @@ def build_beamline(nrays_per_source=1_000_000):  # field size in z direction
             energies=[15_000.0],  # eV
         )
 
-    beamLine.me = roes.ConcaveEllipticCylindricalMirrorXMF(
+    beamLine.m1_mask = rapts.RectangularAperture(
         bl=beamLine,
-        name="EM",
-        center=[0, 0, 0],
-        theta=me_theta,
-        limPhysX=[-10.0, 10.0],
-        limPhysY=[-me_lu, me_ld],
-        p=me_p,
-        q=me_q,
+        name="M1 Mask",
+        center=[
+            mhh_x + np.sin(mhh_theta) * mhh_ld,
+            mhh_y + np.cos(mhh_theta) * mhh_ld,
+            mhh_z,
+        ],
+        opening=[-1000e-3, 0, -10, 10],
+        x=[1.0, 0.0, 0.0],
+        z=[0.0, 0.0, 1.0],
     )
 
-    beamLine.mh = roes.ConvexHyperbolicCylindricalMirrorXMF(
+    beamLine.mhh = roes.ConcaveHyperbolicCylindricalMirrorXMF(
         bl=beamLine,
-        name="HM",
-        center=[0, mh_y, mh_z],
-        theta=mh_theta,
-        extraPitch=(-me_theta + mh_theta),
+        name="MHH",
+        center=[mhh_x, mhh_y, mhh_z],
+        theta=mhh_theta,
+        extraPitch=mhh_theta,
+        extraRoll=np.pi / 2,
+        limPhysX=[-10.0, 10.0],
+        limPhysY=[-mhh_lu, mhh_ld],
+        p=mhh_p,
+        q=mhh_q,
+    )
+
+    beamLine.m2_mask = rapts.RectangularAperture(
+        bl=beamLine,
+        name="M2 Mask",
+        center=[
+            mhe_x + np.sin(mhh_theta * 2 + mhe_theta) * mhe_ld,
+            mhe_y + np.cos(mhh_theta * 2 + mhe_theta) * mhe_ld,
+            mhe_z,
+        ],
+        opening=[-1000e-3, 0, -10, 10],
+        x=[1.0, 0.0, 0.0],
+        z=[0.0, 0.0, 1.0],
+    )
+
+    beamLine.mhe = roes.ConcaveEllipticCylindricalMirrorXMF(
+        bl=beamLine,
+        name="MHE",
+        center=[mhe_x, mhe_y, mhe_z],
+        theta=mhe_theta,
+        extraPitch=mhh_theta * 2 + mhe_theta,
+        extraRoll=np.pi / 2,
+        limPhysX=[-10.0, 10.0],
+        limPhysY=[-mhe_lu, mhe_ld],
+        p=mhe_p,
+        q=mhe_q,
+    )
+
+    beamLine.mve = roes.ConcaveEllipticCylindricalMirrorXMF(
+        bl=beamLine,
+        name="MVE",
+        center=[mve_x, mve_y, mve_z],
+        theta=mve_theta,
+        extraYaw=-(mhh_theta * 2 + mhe_theta * 2),
+        extraPitch=mve_theta,
+        limPhysX=[-10.0, 10.0],
+        limPhysY=[-mve_lu, mve_ld],
+        p=mve_p,
+        q=mve_q,
+    )
+
+    beamLine.mvh = roes.ConvexHyperbolicCylindricalMirrorXMF(
+        bl=beamLine,
+        name="MVH",
+        center=[mvh_x, mvh_y, mvh_z],
+        theta=mvh_theta,
+        extraYaw=-(mhh_theta * 2 + mhe_theta * 2),
+        extraPitch=(-mve_theta * 2 + mvh_theta),
         extraRoll=np.pi,
         limPhysX=[-10.0, 10.0],
-        limPhysY=[-mh_lu, mh_ld],
-        p=mh_p,
-        q=mh_q,
+        limPhysY=[-mvh_lu, mvh_ld],
+        p=mvh_p,
+        q=mvh_q,
     )
 
     beamLine.screen_mask = rapts.RectangularAperture(
         bl=beamLine,
-        name="Mask",
-        center=[0, scr_y, scr_z],
-        opening=[-1e3, 1e3, -10000e-3, 10000e-3],
+        name="Screen Mask",
+        center=[screen_x, screen_y, screen_z],
+        opening=[-2, 2, -2, 2],
         x=[1.0, 0.0, 0.0],
         z=[0.0, 0.0, 1.0],
     )
 
     beamLine.screen = rscreens.Screen(
         bl=beamLine,
-        name="SCR",
-        center=[0, scr_y, scr_z],
-        z=[0, -np.sin(me_theta - 2 * mh_theta), np.cos(me_theta - 2 * mh_theta)],
+        name="Screen",
+        center=[screen_x, screen_y, screen_z],
+        x="auto",
     )
 
     return beamLine
@@ -175,7 +311,7 @@ def build_beamline(nrays_per_source=1_000_000):  # field size in z direction
 def run_process(beamLine):
 
     # Make an empty beam container and append each source beam into it
-    for idx, field_z in enumerate(field_z1d):
+    for idx, (field_x, field_z) in enumerate(zip(field_x2d.flatten(), field_z2d.flatten())):
         name = f"GS{idx:02d}"
         src_beam = beamLine.gs[name].shine()
         if idx == 0:
@@ -183,22 +319,41 @@ def run_process(beamLine):
         else:
             beam_total.concatenate(src_beam)
 
-    meParam01beamGlobal01, meParam01beamLocal01 = beamLine.me.reflect(beam=beam_total)
+    m1_mask_local = beamLine.m1_mask.propagate(beam=beam_total)
 
-    mhParam01beamGlobal01, mhParam01beamLocal01 = beamLine.mh.reflect(
-        beam=meParam01beamGlobal01
+    mhhParam01beamGlobal01, mhhParam01beamLocal01 = beamLine.mhh.reflect(
+        beam=beam_total
     )
 
-    screen_mask_local = beamLine.screen_mask.propagate(beam=mhParam01beamGlobal01)
+    m2_mask_local = beamLine.m2_mask.propagate(beam=mhhParam01beamGlobal01)
 
-    screen01beamLocal01 = beamLine.screen.expose(beam=mhParam01beamGlobal01)
+    mheParam01beamGlobal01, mheParam01beamLocal01 = beamLine.mhe.reflect(
+        beam=mhhParam01beamGlobal01
+    )
+
+    mveParam01beamGlobal01, mveParam01beamLocal01 = beamLine.mve.reflect(
+        beam=mheParam01beamGlobal01
+    )
+
+    mvhParam01beamGlobal01, mvhParam01beamLocal01 = beamLine.mvh.reflect(
+        beam=mveParam01beamGlobal01
+    )
+
+    screen_mask_local = beamLine.screen_mask.propagate(beam=mvhParam01beamGlobal01)
+    screen01beamLocal01 = beamLine.screen.expose(beam=mvhParam01beamGlobal01)
 
     outDict = {
         "beam_total": beam_total,
-        "meParam01beamGlobal01": meParam01beamGlobal01,
-        "meParam01beamLocal01": meParam01beamLocal01,
-        "mhParam01beamGlobal01": mhParam01beamGlobal01,
-        "mhParam01beamLocal01": mhParam01beamLocal01,
+        "m1_mask_local": m1_mask_local,
+        "mhhParam01beamGlobal01": mhhParam01beamGlobal01,
+        "mhhParam01beamLocal01": mhhParam01beamLocal01,
+        "m2_mask_local": m2_mask_local,
+        "mheParam01beamGlobal01": mheParam01beamGlobal01,
+        "mheParam01beamLocal01": mheParam01beamLocal01,
+        "mveParam01beamGlobal01": mveParam01beamGlobal01,
+        "mveParam01beamLocal01": mveParam01beamLocal01,
+        "mvhParam01beamGlobal01": mvhParam01beamGlobal01,
+        "mvhParam01beamLocal01": mvhParam01beamLocal01,
         "screen_mask_local": screen_mask_local,
         "screen01beamLocal01": screen01beamLocal01,
     }
@@ -257,30 +412,8 @@ def define_plots():
     )
     plots.append(Source)
 
-    ME_Footprint = xrtplot.XYCPlot(
-        beam=r"meParam01beamLocal01",
-        xaxis=xrtplot.XYCAxis(
-            label=r"x",
-            fwhmFormatStr=r"%.3f",
-            # limits=[-5_000, 5_000],
-            unit="um",
-            factor=1e3,
-        ),
-        yaxis=xrtplot.XYCAxis(
-            label=r"y",
-            fwhmFormatStr=r"%.3f",
-            limits=[-me_lu * 1e3, me_ld * 1e3],
-            unit="um",
-            factor=1e3,
-        ),
-        caxis=xrtplot.XYCAxis(label=r"energy", unit=r"eV"),
-        title=r"Footprint",
-        aspect="auto",
-    )
-    plots.append(ME_Footprint)
-
-    MH_Footprint = xrtplot.XYCPlot(
-        beam=r"mhParam01beamLocal01",
+    MHH_Footprint = xrtplot.XYCPlot(
+        beam=r"mhhParam01beamLocal01",
         xaxis=xrtplot.XYCAxis(
             label=r"x",
             fwhmFormatStr=r"%.3f",
@@ -291,7 +424,7 @@ def define_plots():
         yaxis=xrtplot.XYCAxis(
             label=r"y",
             fwhmFormatStr=r"%.3f",
-            limits=[-mh_lu * 1e3, mh_ld * 1e3],
+            limits=[-mvh_lu * 1e3, mvh_ld * 1e3],
             unit="um",
             factor=1e3,
         ),
@@ -299,7 +432,73 @@ def define_plots():
         title=r"Footprint",
         aspect="auto",
     )
-    plots.append(MH_Footprint)
+    plots.append(MHH_Footprint)
+
+    MHE_Footprint = xrtplot.XYCPlot(
+        beam=r"mheParam01beamLocal01",
+        xaxis=xrtplot.XYCAxis(
+            label=r"x",
+            fwhmFormatStr=r"%.3f",
+            # limits=[-5_000, 5_000],
+            unit="um",
+            factor=1e3,
+        ),
+        yaxis=xrtplot.XYCAxis(
+            label=r"y",
+            fwhmFormatStr=r"%.3f",
+            limits=[-mve_lu * 1e3, mve_ld * 1e3],
+            unit="um",
+            factor=1e3,
+        ),
+        caxis=xrtplot.XYCAxis(label=r"energy", unit=r"eV"),
+        title=r"Footprint",
+        aspect="auto",
+    )
+    plots.append(MHE_Footprint)
+
+    MVE_Footprint = xrtplot.XYCPlot(
+        beam=r"mveParam01beamLocal01",
+        xaxis=xrtplot.XYCAxis(
+            label=r"x",
+            fwhmFormatStr=r"%.3f",
+            # limits=[-5_000, 5_000],
+            unit="um",
+            factor=1e3,
+        ),
+        yaxis=xrtplot.XYCAxis(
+            label=r"y",
+            fwhmFormatStr=r"%.3f",
+            limits=[-mve_lu * 1e3, mve_ld * 1e3],
+            unit="um",
+            factor=1e3,
+        ),
+        caxis=xrtplot.XYCAxis(label=r"energy", unit=r"eV"),
+        title=r"Footprint",
+        aspect="auto",
+    )
+    plots.append(MVE_Footprint)
+
+    MVH_Footprint = xrtplot.XYCPlot(
+        beam=r"mvhParam01beamLocal01",
+        xaxis=xrtplot.XYCAxis(
+            label=r"x",
+            fwhmFormatStr=r"%.3f",
+            # limits=[-5_000, 5_000],
+            unit="um",
+            factor=1e3,
+        ),
+        yaxis=xrtplot.XYCAxis(
+            label=r"y",
+            fwhmFormatStr=r"%.3f",
+            limits=[-mve_lu * 1e3, mve_ld * 1e3],
+            unit="um",
+            factor=1e3,
+        ),
+        caxis=xrtplot.XYCAxis(label=r"energy", unit=r"eV"),
+        title=r"Footprint",
+        aspect="auto",
+    )
+    plots.append(MVH_Footprint)
 
     Focus = xrtplot.XYCPlot(
         beam=r"screen01beamLocal01",
@@ -328,7 +527,7 @@ def main():
         backend=r"raycing", 
         beamLine=beamLine
     )
-    beamLine.glow()
+    # beamLine.glow()
 
     # === FWHM at screen (local coordinates) ==============================
 
