@@ -649,3 +649,4 @@ def run_ray_tracing(
     runCardVals.tstartLong = time.localtime()
     start_jobs()
     plt.show()
+    # plt.show(block=False)

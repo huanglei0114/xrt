@@ -117,80 +117,114 @@ mhe_l = mhe_lu + mhe_ld
 
 # ===========================================================
 
-src_dx = 1.0e-3 / 2.355  # calculate RMS from FWHM
-src_dz = 1.0e-3 / 2.355  # calculate RMS from FWHM
+src_dx = 0.67e-3 / 2.355  # calculate RMS from FWHM
+src_dz = 0.67e-3 / 2.355  # calculate RMS from FWHM
 
-src_dxprime = 50e-3 / 2.355  # calculate RMS from FWHM
-src_dzprime = 50e-3 / 2.355  # calculate RMS from FWHM
+src_dxprime = 10e-3 / 2.355  # calculate RMS from FWHM
+src_dzprime = 10e-3 / 2.355  # calculate RMS from FWHM
 
 source_x0 = 0
 source_y0 = 0
 source_z0 = 0
 
-beam_angle_x = 0
-beam_angle_z = 0
+beam_angle_rotx = 0
+beam_angle_rotz = 0
 
 mhh_x = 0
 mhh_y = mhh_p
 mhh_z = 0
 
-beam_angle_x += mhh_theta * 2
-beam_angle_z += 0
+beam_angle_rotx_after_mhh = beam_angle_rotx
+beam_angle_rotz_after_mhh = beam_angle_rotz + mhh_theta * 2
 
-# screen_x = mhh_x + mhh_p * np.sin(beam_angle_x)
-# screen_y = mhh_y + mhh_p * np.cos(beam_angle_x)
+# screen_x = mhh_x + mhh_p * np.sin(beam_angle_rotz_after_mhh)
+# screen_y = mhh_y + mhh_p * np.cos(beam_angle_rotz_after_mhh)
 # screen_z = mhh_z + 0
 
 dist = abs(mhe_p - mhh_q)
 
-mhe_x = mhh_x + dist * np.sin(beam_angle_x)
-mhe_y = mhh_y + dist * np.cos(beam_angle_x)
+mhe_x = mhh_x + dist * np.sin(beam_angle_rotz_after_mhh)
+mhe_y = mhh_y + dist * np.cos(beam_angle_rotz_after_mhh)
 mhe_z = mhh_z + 0
 
-beam_angle_x += mhe_theta * 2
-beam_angle_z += 0
+beam_angle_rotx_after_mhe = beam_angle_rotx_after_mhh + 0
+beam_angle_rotz_after_mhe = beam_angle_rotz_after_mhh + mhe_theta * 2
 
-# screen_x = mhe_x + mhe_q * np.sin(beam_angle_x)
-# screen_y = mhe_y + mhe_q * np.cos(beam_angle_x)
+# screen_x = mhe_x + mhe_q * np.sin(beam_angle_rotz_after_mhe)
+# screen_y = mhe_y + mhe_q * np.cos(beam_angle_rotz_after_mhe)
 # screen_z = mhe_z + 0
 
 dist = abs(mve_p - dist - mhh_p)
 
-mve_x = mhe_x + dist * np.sin(beam_angle_x)
-mve_y = mhe_y + dist * np.cos(beam_angle_x)
+mve_x = mhe_x + dist * np.sin(beam_angle_rotz_after_mhe)
+mve_y = mhe_y + dist * np.cos(beam_angle_rotz_after_mhe)
 mve_z = mhe_z + 0
 
-beam_angle_x += 0
-beam_angle_z += mve_theta * 2
+beam_angle_rotx_after_mve = beam_angle_rotx_after_mhe + mve_theta * 2
+beam_angle_rotz_after_mve = beam_angle_rotz_after_mhe + 0
 
-# screen_x = mve_x + (mve_q * np.cos(beam_angle_z)) * np.sin(beam_angle_x)
-# screen_y = mve_y + (mve_q * np.cos(beam_angle_z)) * np.cos(beam_angle_x)
-# screen_z = mve_z + mve_q * np.sin(beam_angle_z)
+# screen_x = mve_x + (mve_q * np.cos(beam_angle_rotx_after_mve)) * np.sin(beam_angle_rotz_after_mve)
+# screen_y = mve_y + (mve_q * np.cos(beam_angle_rotx_after_mve)) * np.cos(beam_angle_rotz_after_mve)
+# screen_z = mve_z + mve_q * np.sin(beam_angle_rotx_after_mve)
 
 dist = abs(mve_q - mvh_p)
 
-mvh_x = mve_x + (dist * np.cos(beam_angle_z)) * np.sin(beam_angle_x)
-mvh_y = mve_y + (dist * np.cos(beam_angle_z)) * np.cos(beam_angle_x)
-mvh_z = mve_z + dist * np.sin(beam_angle_z)
+mvh_x = mve_x + (dist * np.cos(beam_angle_rotx_after_mve)) * np.sin(
+    beam_angle_rotz_after_mve
+)
+mvh_y = mve_y + (dist * np.cos(beam_angle_rotx_after_mve)) * np.cos(
+    beam_angle_rotz_after_mve
+)
+mvh_z = mve_z + dist * np.sin(beam_angle_rotx_after_mve)
 
-beam_angle_x += 0
-beam_angle_z += -mvh_theta * 2
+beam_angle_rotx_after_mvh = beam_angle_rotx_after_mve - mvh_theta * 2
+beam_angle_rotz_after_mvh = beam_angle_rotz_after_mve + 0
 
-screen_x = mvh_x + (mvh_q * np.cos(beam_angle_z)) * np.sin(beam_angle_x)
-screen_y = mvh_y + (mvh_q * np.cos(beam_angle_z)) * np.cos(beam_angle_x)
-screen_z = mvh_z + mvh_q * np.sin(beam_angle_z)
+screen_x = mvh_x + (mvh_q * np.cos(beam_angle_rotx_after_mvh)) * np.sin(
+    beam_angle_rotz_after_mvh
+)
+screen_y = mvh_y + (mvh_q * np.cos(beam_angle_rotx_after_mvh)) * np.cos(
+    beam_angle_rotz_after_mvh
+)
+screen_z = mvh_z + mvh_q * np.sin(beam_angle_rotx_after_mvh)
+
+# Calcualte the rotated screen x and z axes
+Rz = np.array(
+    [
+        [np.cos(beam_angle_rotz_after_mvh), -np.sin(beam_angle_rotz_after_mvh), 0],
+        [np.sin(beam_angle_rotz_after_mvh), np.cos(beam_angle_rotz_after_mvh), 0],
+        [0, 0, 1],
+    ]
+)
+Rx = np.array(
+    [
+        [1, 0, 0],
+        [0, np.cos(beam_angle_rotx_after_mvh), -np.sin(beam_angle_rotx_after_mvh)],
+        [0, np.sin(beam_angle_rotx_after_mvh), np.cos(beam_angle_rotx_after_mvh)],
+    ]
+)
+screen_x_axis = Rz @ Rx @ np.array([1, 0, 0]).T
+screen_z_axis = Rz @ Rx @ np.array([0, 0, 1]).T
 
 
-field_x1d = np.linspace(-50e-3, 50e-3, 21)  # field size in x direction
-field_z1d = np.linspace(0e-3, 0e-3, 1)  # field size in z direction
+field_x1d = np.linspace(0e-3, 1e-3, 2)  # field size in x direction
+field_z1d = np.linspace(0e-3, 1e-3, 2)  # field size in z direction
 
-field_x2d, field_z2d = np.meshgrid(field_x1d, field_z1d)  # create 2D grid of field points
+dx = 20e-3
+dz = 80e-3
+
+field_x2d, field_z2d = np.meshgrid(
+    field_x1d + dx, field_z1d + dz
+)  # create 2D grid of field points
+
 
 def build_beamline(nrays_per_source=1_000_000):  # field size in z direction
 
     beamLine = raycing.BeamLine()
     beamLine.gs = {}
-    for idx, (field_x, field_z) in enumerate(zip(field_x2d.flatten(), field_z2d.flatten())):
+    for idx, (field_x, field_z) in enumerate(
+        zip(field_x2d.flatten(), field_z2d.flatten())
+    ):
 
         source_x = source_x0 + field_x
         source_y = source_y0
@@ -302,7 +336,8 @@ def build_beamline(nrays_per_source=1_000_000):  # field size in z direction
         bl=beamLine,
         name="Screen",
         center=[screen_x, screen_y, screen_z],
-        x="auto",
+        x=screen_x_axis,
+        z=screen_z_axis,
     )
 
     return beamLine
@@ -311,7 +346,9 @@ def build_beamline(nrays_per_source=1_000_000):  # field size in z direction
 def run_process(beamLine):
 
     # Make an empty beam container and append each source beam into it
-    for idx, (field_x, field_z) in enumerate(zip(field_x2d.flatten(), field_z2d.flatten())):
+    for idx, (field_x, field_z) in enumerate(
+        zip(field_x2d.flatten(), field_z2d.flatten())
+    ):
         name = f"GS{idx:02d}"
         src_beam = beamLine.gs[name].shine()
         if idx == 0:
@@ -521,11 +558,7 @@ def main():
     beamLine.alignE = E0
     plots = define_plots()
     xrtrun.run_ray_tracing(
-        plots=plots, 
-        repeats=1, 
-        processes=1, 
-        backend=r"raycing", 
-        beamLine=beamLine
+        plots=plots, repeats=1, processes=1, backend=r"raycing", beamLine=beamLine
     )
     # beamLine.glow()
 

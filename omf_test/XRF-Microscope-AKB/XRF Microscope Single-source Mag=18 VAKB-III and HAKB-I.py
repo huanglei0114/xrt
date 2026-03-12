@@ -127,58 +127,84 @@ source_x0 = 0
 source_y0 = 0
 source_z0 = 0
 
-beam_angle_x = 0
-beam_angle_z = 0
+beam_angle_rotx = 0
+beam_angle_rotz = 0
 
 mhh_x = 0
 mhh_y = mhh_p
 mhh_z = 0
 
-beam_angle_x += mhh_theta * 2
-beam_angle_z += 0
+beam_angle_rotx_after_mhh = beam_angle_rotx
+beam_angle_rotz_after_mhh = beam_angle_rotz + mhh_theta * 2
 
-# screen_x = mhh_x + mhh_p * np.sin(beam_angle_x)
-# screen_y = mhh_y + mhh_p * np.cos(beam_angle_x)
+# screen_x = mhh_x + mhh_p * np.sin(beam_angle_rotz_after_mhh)
+# screen_y = mhh_y + mhh_p * np.cos(beam_angle_rotz_after_mhh)
 # screen_z = mhh_z + 0
 
 dist = abs(mhe_p - mhh_q)
 
-mhe_x = mhh_x + dist * np.sin(beam_angle_x)
-mhe_y = mhh_y + dist * np.cos(beam_angle_x)
+mhe_x = mhh_x + dist * np.sin(beam_angle_rotz_after_mhh)
+mhe_y = mhh_y + dist * np.cos(beam_angle_rotz_after_mhh)
 mhe_z = mhh_z + 0
 
-beam_angle_x += mhe_theta * 2
-beam_angle_z += 0
+beam_angle_rotx_after_mhe = beam_angle_rotx_after_mhh + 0
+beam_angle_rotz_after_mhe = beam_angle_rotz_after_mhh + mhe_theta * 2
 
-# screen_x = mhe_x + mhe_q * np.sin(beam_angle_x)
-# screen_y = mhe_y + mhe_q * np.cos(beam_angle_x)
+# screen_x = mhe_x + mhe_q * np.sin(beam_angle_rotz_after_mhe)
+# screen_y = mhe_y + mhe_q * np.cos(beam_angle_rotz_after_mhe)
 # screen_z = mhe_z + 0
 
 dist = abs(mve_p - dist - mhh_p)
 
-mve_x = mhe_x + dist * np.sin(beam_angle_x)
-mve_y = mhe_y + dist * np.cos(beam_angle_x)
+mve_x = mhe_x + dist * np.sin(beam_angle_rotz_after_mhe)
+mve_y = mhe_y + dist * np.cos(beam_angle_rotz_after_mhe)
 mve_z = mhe_z + 0
 
-beam_angle_x += 0
-beam_angle_z += mve_theta * 2
+beam_angle_rotx_after_mve = beam_angle_rotx_after_mhe + mve_theta * 2
+beam_angle_rotz_after_mve = beam_angle_rotz_after_mhe + 0
 
-# screen_x = mve_x + (mve_q * np.cos(beam_angle_z)) * np.sin(beam_angle_x)
-# screen_y = mve_y + (mve_q * np.cos(beam_angle_z)) * np.cos(beam_angle_x)
-# screen_z = mve_z + mve_q * np.sin(beam_angle_z)
+# screen_x = mve_x + (mve_q * np.cos(beam_angle_rotx_after_mve)) * np.sin(beam_angle_rotz_after_mve)
+# screen_y = mve_y + (mve_q * np.cos(beam_angle_rotx_after_mve)) * np.cos(beam_angle_rotz_after_mve)
+# screen_z = mve_z + mve_q * np.sin(beam_angle_rotx_after_mve)
 
 dist = abs(mve_q - mvh_p)
 
-mvh_x = mve_x + (dist * np.cos(beam_angle_z)) * np.sin(beam_angle_x)
-mvh_y = mve_y + (dist * np.cos(beam_angle_z)) * np.cos(beam_angle_x)
-mvh_z = mve_z + dist * np.sin(beam_angle_z)
+mvh_x = mve_x + (dist * np.cos(beam_angle_rotx_after_mve)) * np.sin(
+    beam_angle_rotz_after_mve
+)
+mvh_y = mve_y + (dist * np.cos(beam_angle_rotx_after_mve)) * np.cos(
+    beam_angle_rotz_after_mve
+)
+mvh_z = mve_z + dist * np.sin(beam_angle_rotx_after_mve)
 
-beam_angle_x += 0
-beam_angle_z += -mvh_theta * 2
+beam_angle_rotx_after_mvh = beam_angle_rotx_after_mve - mvh_theta * 2
+beam_angle_rotz_after_mvh = beam_angle_rotz_after_mve + 0
 
-screen_x = mvh_x + (mvh_q * np.cos(beam_angle_z)) * np.sin(beam_angle_x)
-screen_y = mvh_y + (mvh_q * np.cos(beam_angle_z)) * np.cos(beam_angle_x)
-screen_z = mvh_z + mvh_q * np.sin(beam_angle_z)
+screen_x = mvh_x + (mvh_q * np.cos(beam_angle_rotx_after_mvh)) * np.sin(
+    beam_angle_rotz_after_mvh
+)
+screen_y = mvh_y + (mvh_q * np.cos(beam_angle_rotx_after_mvh)) * np.cos(
+    beam_angle_rotz_after_mvh
+)
+screen_z = mvh_z + mvh_q * np.sin(beam_angle_rotx_after_mvh)
+
+# Calcualte the rotated screen x and z axes
+Rz = np.array(
+    [
+        [np.cos(beam_angle_rotz_after_mvh), -np.sin(beam_angle_rotz_after_mvh), 0],
+        [np.sin(beam_angle_rotz_after_mvh), np.cos(beam_angle_rotz_after_mvh), 0],
+        [0, 0, 1],
+    ]
+)
+Rx = np.array(
+    [
+        [1, 0, 0],
+        [0, np.cos(beam_angle_rotx_after_mvh), -np.sin(beam_angle_rotx_after_mvh)],
+        [0, np.sin(beam_angle_rotx_after_mvh), np.cos(beam_angle_rotx_after_mvh)],
+    ]
+)
+screen_x_axis = Rz @ Rx @ np.array([1, 0, 0]).T
+screen_z_axis = Rz @ Rx @ np.array([0, 0, 1]).T
 
 
 def build_beamline(field_x=0e-3, field_z=0e-3):
@@ -196,7 +222,7 @@ def build_beamline(field_x=0e-3, field_z=0e-3):
         name="GS",
         center=[source_x, source_y, source_z],
         pitch=0,
-        nrays=1_000_000,
+        nrays=10_000_000,
         dx=src_dx,
         dz=src_dz,
         dxprime=src_dxprime,
@@ -296,7 +322,8 @@ def build_beamline(field_x=0e-3, field_z=0e-3):
         bl=beamLine,
         name="Screen",
         center=[screen_x, screen_y, screen_z],
-        x="auto",
+        x=screen_x_axis,
+        z=screen_z_axis,
     )
 
     return beamLine
@@ -382,110 +409,110 @@ rrun.run_process = run_process
 def define_plots():
     plots = []
 
-    Source = xrtplot.XYCPlot(
-        beam=r"geometricSource01beamGlobal01",
-        xaxis=xrtplot.XYCAxis(label=r"x", fwhmFormatStr=r"%.3f", unit="um", factor=1e3),
-        yaxis=xrtplot.XYCAxis(
-            label=r"z",
-            fwhmFormatStr=r"%.3f",
-            # limits=[source_z0*1e3-1500, source_z0*1e3+1500],
-            # offset=source_z0*1e3,
-            unit="um",
-            factor=1e3,
-        ),
-        caxis=xrtplot.XYCAxis(label=r"energy", unit=r"eV"),
-        title=r"Source",
-        aspect="equal",
-    )
-    plots.append(Source)
+    # Source = xrtplot.XYCPlot(
+    #     beam=r"geometricSource01beamGlobal01",
+    #     xaxis=xrtplot.XYCAxis(label=r"x", fwhmFormatStr=r"%.3f", unit="um", factor=1e3),
+    #     yaxis=xrtplot.XYCAxis(
+    #         label=r"z",
+    #         fwhmFormatStr=r"%.3f",
+    #         # limits=[source_z0*1e3-1500, source_z0*1e3+1500],
+    #         # offset=source_z0*1e3,
+    #         unit="um",
+    #         factor=1e3,
+    #     ),
+    #     caxis=xrtplot.XYCAxis(label=r"energy", unit=r"eV"),
+    #     title=r"Source",
+    #     aspect="equal",
+    # )
+    # plots.append(Source)
 
-    MHH_Footprint = xrtplot.XYCPlot(
-        beam=r"mhhParam01beamLocal01",
-        xaxis=xrtplot.XYCAxis(
-            label=r"x",
-            fwhmFormatStr=r"%.3f",
-            # limits=[-1_000, 1_000],
-            unit="um",
-            factor=1e3,
-        ),
-        yaxis=xrtplot.XYCAxis(
-            label=r"y",
-            fwhmFormatStr=r"%.3f",
-            limits=[-mvh_lu * 1e3, mvh_ld * 1e3],
-            unit="um",
-            factor=1e3,
-        ),
-        caxis=xrtplot.XYCAxis(label=r"energy", unit=r"eV"),
-        title=r"Footprint",
-        aspect="auto",
-    )
-    plots.append(MHH_Footprint)
+    # MHH_Footprint = xrtplot.XYCPlot(
+    #     beam=r"mhhParam01beamLocal01",
+    #     xaxis=xrtplot.XYCAxis(
+    #         label=r"x",
+    #         fwhmFormatStr=r"%.3f",
+    #         # limits=[-1_000, 1_000],
+    #         unit="um",
+    #         factor=1e3,
+    #     ),
+    #     yaxis=xrtplot.XYCAxis(
+    #         label=r"y",
+    #         fwhmFormatStr=r"%.3f",
+    #         limits=[-mvh_lu * 1e3, mvh_ld * 1e3],
+    #         unit="um",
+    #         factor=1e3,
+    #     ),
+    #     caxis=xrtplot.XYCAxis(label=r"energy", unit=r"eV"),
+    #     title=r"Footprint",
+    #     aspect="auto",
+    # )
+    # plots.append(MHH_Footprint)
 
-    MHE_Footprint = xrtplot.XYCPlot(
-        beam=r"mheParam01beamLocal01",
-        xaxis=xrtplot.XYCAxis(
-            label=r"x",
-            fwhmFormatStr=r"%.3f",
-            # limits=[-5_000, 5_000],
-            unit="um",
-            factor=1e3,
-        ),
-        yaxis=xrtplot.XYCAxis(
-            label=r"y",
-            fwhmFormatStr=r"%.3f",
-            limits=[-mve_lu * 1e3, mve_ld * 1e3],
-            unit="um",
-            factor=1e3,
-        ),
-        caxis=xrtplot.XYCAxis(label=r"energy", unit=r"eV"),
-        title=r"Footprint",
-        aspect="auto",
-    )
-    plots.append(MHE_Footprint)
+    # MHE_Footprint = xrtplot.XYCPlot(
+    #     beam=r"mheParam01beamLocal01",
+    #     xaxis=xrtplot.XYCAxis(
+    #         label=r"x",
+    #         fwhmFormatStr=r"%.3f",
+    #         # limits=[-5_000, 5_000],
+    #         unit="um",
+    #         factor=1e3,
+    #     ),
+    #     yaxis=xrtplot.XYCAxis(
+    #         label=r"y",
+    #         fwhmFormatStr=r"%.3f",
+    #         limits=[-mve_lu * 1e3, mve_ld * 1e3],
+    #         unit="um",
+    #         factor=1e3,
+    #     ),
+    #     caxis=xrtplot.XYCAxis(label=r"energy", unit=r"eV"),
+    #     title=r"Footprint",
+    #     aspect="auto",
+    # )
+    # plots.append(MHE_Footprint)
 
-    MVE_Footprint = xrtplot.XYCPlot(
-        beam=r"mveParam01beamLocal01",
-        xaxis=xrtplot.XYCAxis(
-            label=r"x",
-            fwhmFormatStr=r"%.3f",
-            # limits=[-5_000, 5_000],
-            unit="um",
-            factor=1e3,
-        ),
-        yaxis=xrtplot.XYCAxis(
-            label=r"y",
-            fwhmFormatStr=r"%.3f",
-            limits=[-mve_lu * 1e3, mve_ld * 1e3],
-            unit="um",
-            factor=1e3,
-        ),
-        caxis=xrtplot.XYCAxis(label=r"energy", unit=r"eV"),
-        title=r"Footprint",
-        aspect="auto",
-    )
-    plots.append(MVE_Footprint)
+    # MVE_Footprint = xrtplot.XYCPlot(
+    #     beam=r"mveParam01beamLocal01",
+    #     xaxis=xrtplot.XYCAxis(
+    #         label=r"x",
+    #         fwhmFormatStr=r"%.3f",
+    #         # limits=[-5_000, 5_000],
+    #         unit="um",
+    #         factor=1e3,
+    #     ),
+    #     yaxis=xrtplot.XYCAxis(
+    #         label=r"y",
+    #         fwhmFormatStr=r"%.3f",
+    #         limits=[-mve_lu * 1e3, mve_ld * 1e3],
+    #         unit="um",
+    #         factor=1e3,
+    #     ),
+    #     caxis=xrtplot.XYCAxis(label=r"energy", unit=r"eV"),
+    #     title=r"Footprint",
+    #     aspect="auto",
+    # )
+    # plots.append(MVE_Footprint)
 
-    MVH_Footprint = xrtplot.XYCPlot(
-        beam=r"mvhParam01beamLocal01",
-        xaxis=xrtplot.XYCAxis(
-            label=r"x",
-            fwhmFormatStr=r"%.3f",
-            # limits=[-5_000, 5_000],
-            unit="um",
-            factor=1e3,
-        ),
-        yaxis=xrtplot.XYCAxis(
-            label=r"y",
-            fwhmFormatStr=r"%.3f",
-            limits=[-mve_lu * 1e3, mve_ld * 1e3],
-            unit="um",
-            factor=1e3,
-        ),
-        caxis=xrtplot.XYCAxis(label=r"energy", unit=r"eV"),
-        title=r"Footprint",
-        aspect="auto",
-    )
-    plots.append(MVH_Footprint)
+    # MVH_Footprint = xrtplot.XYCPlot(
+    #     beam=r"mvhParam01beamLocal01",
+    #     xaxis=xrtplot.XYCAxis(
+    #         label=r"x",
+    #         fwhmFormatStr=r"%.3f",
+    #         # limits=[-5_000, 5_000],
+    #         unit="um",
+    #         factor=1e3,
+    #     ),
+    #     yaxis=xrtplot.XYCAxis(
+    #         label=r"y",
+    #         fwhmFormatStr=r"%.3f",
+    #         limits=[-mve_lu * 1e3, mve_ld * 1e3],
+    #         unit="um",
+    #         factor=1e3,
+    #     ),
+    #     caxis=xrtplot.XYCAxis(label=r"energy", unit=r"eV"),
+    #     title=r"Footprint",
+    #     aspect="auto",
+    # )
+    # plots.append(MVH_Footprint)
 
     Focus = xrtplot.XYCPlot(
         beam=r"screen01beamLocal01",
@@ -504,8 +531,8 @@ def main():
 
     fwhm_x_um = []
     fwhm_z_um = []
-    field_x_um = np.linspace(0, 0, 1)
-    field_z_um = np.linspace(-30, -30, 1)
+    field_x_um = np.linspace(-60, 60, 13)
+    field_z_um = np.linspace(0, 0, 1)
     for field_x in field_x_um * 1e-3:
         for field_z in field_z_um * 1e-3:
             beamLine = build_beamline(field_x=field_x, field_z=field_z)
@@ -515,14 +542,42 @@ def main():
             plots = define_plots()
             xrtrun.run_ray_tracing(
                 plots=plots,
-                repeats=16,
-                processes=4,
+                repeats=1,
+                processes=1,
                 backend=r"raycing",
                 beamLine=beamLine,
             )
-            beamLine.glow()
+            # beamLine.glow()
+
+            # wait for the ray tracing to finish and the plots to be ready
+            # when beamLine has fwhm_x and fwhm_z attributes, it means the ray tracing is done and the FWHM values are calculated
+            while not hasattr(beamLine, "fwhm_x") or not hasattr(beamLine, "fwhm_z"):
+                plt.pause(0.1)
             fwhm_x_um.append(beamLine.fwhm_x * 1e3)
             fwhm_z_um.append(beamLine.fwhm_z * 1e3)
+
+    # Plot FWHM vs field
+    if field_x_um.size > 1:
+        fig, ax = plt.subplots(figsize=(8, 6))
+        ax.plot(field_x_um, fwhm_x_um, marker="x", label="FWHM_x")
+        ax.plot(field_x_um, fwhm_z_um, marker="o", label="FWHM_z")
+        ax.set_xlabel("x-Field [µm]")
+        ax.set_ylabel("FWHM [µm]")
+        ax.set_title("FWHM at Screen vs Field")
+        ax.legend()
+        plt.tight_layout()
+
+    if field_z_um.size > 1:
+        fig, ax = plt.subplots(figsize=(8, 6))
+        ax.plot(field_z_um, fwhm_x_um, marker="x", label="FWHM_x")
+        ax.plot(field_z_um, fwhm_z_um, marker="o", label="FWHM_z")
+        ax.set_xlabel("z-Field [µm]")
+        ax.set_ylabel("FWHM [µm]")
+        ax.set_title("FWHM at Screen vs Field")
+        ax.legend()
+        plt.tight_layout()
+
+    plt.show()
 
     return fwhm_x_um, fwhm_z_um
 

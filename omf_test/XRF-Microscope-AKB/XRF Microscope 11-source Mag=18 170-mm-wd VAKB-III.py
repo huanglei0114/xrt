@@ -322,11 +322,7 @@ def main():
     beamLine.alignE = E0
     plots = define_plots()
     xrtrun.run_ray_tracing(
-        plots=plots, 
-        repeats=1, 
-        processes=1, 
-        backend=r"raycing", 
-        beamLine=beamLine
+        plots=plots, repeats=1, processes=1, backend=r"raycing", beamLine=beamLine
     )
     beamLine.glow()
 
