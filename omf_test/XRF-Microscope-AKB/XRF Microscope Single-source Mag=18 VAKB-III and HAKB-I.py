@@ -531,8 +531,8 @@ def main():
 
     fwhm_x_um = []
     fwhm_z_um = []
-    field_x_um = np.linspace(-50, 50, 51)
-    field_z_um = np.linspace(-20, 80, 51)
+    field_x_um = np.linspace(-50, 50, 11)
+    field_z_um = np.linspace(-20, 80, 11)
     for field_z in field_z_um * 1e-3:
         for field_x in field_x_um * 1e-3:
             beamLine = build_beamline(field_x=field_x, field_z=field_z)
