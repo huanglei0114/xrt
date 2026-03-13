@@ -120,8 +120,8 @@ mhe_l = mhe_lu + mhe_ld
 src_dx = 1.0e-3 / 2.355  # calculate RMS from FWHM
 src_dz = 1.0e-3 / 2.355  # calculate RMS from FWHM
 
-src_dxprime = 50e-3 / 2.355  # calculate RMS from FWHM
-src_dzprime = 50e-3 / 2.355  # calculate RMS from FWHM
+src_dxprime = 8e-3 / 2.355  # calculate RMS from FWHM
+src_dzprime = 8e-3 / 2.355  # calculate RMS from FWHM
 
 source_x0 = 0
 source_y0 = 0
@@ -222,7 +222,7 @@ def build_beamline(field_x=0e-3, field_z=0e-3):
         name="GS",
         center=[source_x, source_y, source_z],
         pitch=0,
-        nrays=10_000_000,
+        nrays=500_000,
         dx=src_dx,
         dz=src_dz,
         dxprime=src_dxprime,
@@ -531,10 +531,10 @@ def main():
 
     fwhm_x_um = []
     fwhm_z_um = []
-    field_x_um = np.linspace(-60, 60, 13)
-    field_z_um = np.linspace(0, 0, 1)
-    for field_x in field_x_um * 1e-3:
-        for field_z in field_z_um * 1e-3:
+    field_x_um = np.linspace(-50, 50, 51)
+    field_z_um = np.linspace(-20, 80, 51)
+    for field_z in field_z_um * 1e-3:
+        for field_x in field_x_um * 1e-3:
             beamLine = build_beamline(field_x=field_x, field_z=field_z)
 
             E0 = list(beamLine.geometricSource.energies)[0]
@@ -557,7 +557,7 @@ def main():
             fwhm_z_um.append(beamLine.fwhm_z * 1e3)
 
     # Plot FWHM vs field
-    if field_x_um.size > 1:
+    if field_x_um.size > 1 and field_z_um.size == 1:
         fig, ax = plt.subplots(figsize=(8, 6))
         ax.plot(field_x_um, fwhm_x_um, marker="x", label="FWHM_x")
         ax.plot(field_x_um, fwhm_z_um, marker="o", label="FWHM_z")
@@ -567,7 +567,7 @@ def main():
         ax.legend()
         plt.tight_layout()
 
-    if field_z_um.size > 1:
+    if field_z_um.size > 1 and field_x_um.size == 1:
         fig, ax = plt.subplots(figsize=(8, 6))
         ax.plot(field_z_um, fwhm_x_um, marker="x", label="FWHM_x")
         ax.plot(field_z_um, fwhm_z_um, marker="o", label="FWHM_z")
@@ -575,6 +575,52 @@ def main():
         ax.set_ylabel("FWHM [µm]")
         ax.set_title("FWHM at Screen vs Field")
         ax.legend()
+        plt.tight_layout()
+
+    if field_x_um.size > 1 and field_z_um.size > 1:
+
+        field_x2d_um, field_z2d_um = np.meshgrid(field_x_um, field_z_um)
+        fwhm_x_um = np.array(fwhm_x_um).reshape(field_z_um.size, field_x_um.size)
+        fwhm_z_um = np.array(fwhm_z_um).reshape(field_z_um.size, field_x_um.size)
+        fwhm_um = np.sqrt(fwhm_x_um**2 + fwhm_z_um**2)
+
+        fig, axes = plt.subplots(1, 3, figsize=(16, 5))
+        sc = axes[0].pcolormesh(
+            field_x2d_um,
+            field_z2d_um,
+            fwhm_x_um,
+            shading="auto",
+            cmap="viridis",
+        )
+        axes[0].set_xlabel("x-Field [µm]")
+        axes[0].set_ylabel("z-Field [µm]")
+        axes[0].set_title("x-FWHM at Screen vs Field")
+        plt.colorbar(sc, label="FWHM [µm]")
+
+        sc = axes[1].pcolormesh(
+            field_x2d_um,
+            field_z2d_um,
+            fwhm_z_um,
+            shading="auto",
+            cmap="viridis",
+        )
+        axes[1].set_xlabel("x-Field [µm]")
+        axes[1].set_ylabel("z-Field [µm]")
+        axes[1].set_title("z-FWHM at Screen vs Field")
+        plt.colorbar(sc, label="FWHM [µm]")
+
+        sc = axes[2].pcolormesh(
+            field_x2d_um,
+            field_z2d_um,
+            fwhm_um,
+            shading="auto",
+            cmap="plasma",
+        )
+        axes[2].set_xlabel("x-Field [µm]")
+        axes[2].set_ylabel("z-Field [µm]")
+        axes[2].set_title("Total FWHM at Screen vs Field")
+        plt.colorbar(sc, label="FWHM [µm]")
+
         plt.tight_layout()
 
     plt.show()
