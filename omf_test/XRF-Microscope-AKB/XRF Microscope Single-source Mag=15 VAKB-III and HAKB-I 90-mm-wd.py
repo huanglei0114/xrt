@@ -23,7 +23,6 @@ import xrt.runner as xrtrun
 
 import matplotlib.pyplot as plt
 
-
 def _fwhm_from_hist(x, bins=201, rng=None, baseline=0.0):
     """
     Compute FWHM from 1D samples by histogramming and linearly
@@ -72,7 +71,7 @@ def fwhm_from_samples(samples, bins=201, range=None, baseline=0.0):
 
 # VAKB-III geometry config
 script_dir = Path(__file__).resolve().parent
-config_path = script_dir / "Mag=18 AKB-III Geometry Config.json"
+config_path = script_dir / "Mag=15 AKB-III Geometry Config.json"
 
 with config_path.open("r") as f:
     config = json.load(f)
@@ -95,7 +94,7 @@ mve_l = mve_lu + mve_ld
 
 # HAKB-I geometry config
 script_dir = Path(__file__).resolve().parent
-config_path = script_dir / "Mag=18 AKB-I Geometry Config.json"
+config_path = script_dir / "Mag=15 AKB-I Geometry Config.json"
 
 with config_path.open("r") as f:
     config = json.load(f)
@@ -117,8 +116,11 @@ mhe_l = mhe_lu + mhe_ld
 
 # ===========================================================
 
-src_dx = 1.0e-3 / 2.355  # calculate RMS from FWHM
-src_dz = 1.0e-3 / 2.355  # calculate RMS from FWHM
+source_fwhm_x = 1.0e-3  # FWHM in x direction in meters
+source_fwhm_z = 1.0e-3  # FWHM in z direction in meters
+
+src_dx = source_fwhm_x / 2.355  # calculate RMS from FWHM
+src_dz = source_fwhm_z / 2.355  # calculate RMS from FWHM
 
 src_dxprime = 8e-3 / 2.355  # calculate RMS from FWHM
 src_dzprime = 8e-3 / 2.355  # calculate RMS from FWHM
@@ -222,7 +224,7 @@ def build_beamline(field_x=0e-3, field_z=0e-3):
         name="GS",
         center=[source_x, source_y, source_z],
         pitch=0,
-        nrays=500_000,
+        nrays=2_000_000,
         dx=src_dx,
         dz=src_dz,
         dxprime=src_dxprime,
@@ -531,8 +533,8 @@ def main():
 
     fwhm_x_um = []
     fwhm_z_um = []
-    field_x_um = np.linspace(-50, 50, 11)
-    field_z_um = np.linspace(-20, 80, 11)
+    field_x_um = np.linspace(-60, 60, 13)
+    field_z_um = np.linspace(0, 0, 1)
     for field_z in field_z_um * 1e-3:
         for field_x in field_x_um * 1e-3:
             beamLine = build_beamline(field_x=field_x, field_z=field_z)
@@ -555,7 +557,7 @@ def main():
                 plt.pause(0.1)
             fwhm_x_um.append(beamLine.fwhm_x * 1e3)
             fwhm_z_um.append(beamLine.fwhm_z * 1e3)
-
+   
     # Plot FWHM vs field
     if field_x_um.size > 1 and field_z_um.size == 1:
         fig, ax = plt.subplots(figsize=(8, 6))
@@ -563,7 +565,8 @@ def main():
         ax.plot(field_x_um, fwhm_z_um, marker="o", label="FWHM_z")
         ax.set_xlabel("x-Field [µm]")
         ax.set_ylabel("FWHM [µm]")
-        ax.set_title("FWHM at Screen vs Field")
+        ax.set_title("FWHM_x at Screen vs Field of View")
+        ax.set_ylim([0, 40])
         ax.legend()
         plt.tight_layout()
 
@@ -573,7 +576,8 @@ def main():
         ax.plot(field_z_um, fwhm_z_um, marker="o", label="FWHM_z")
         ax.set_xlabel("z-Field [µm]")
         ax.set_ylabel("FWHM [µm]")
-        ax.set_title("FWHM at Screen vs Field")
+        ax.set_title("FWHM at Screen vs Field of View")
+        ax.set_ylim([0, 40])
         ax.legend()
         plt.tight_layout()
 
