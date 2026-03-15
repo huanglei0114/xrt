@@ -210,8 +210,8 @@ screen_z_axis = Rz @ Rx @ np.array([0, 0, 1]).T
 field_x1d = np.linspace(0e-3, 1e-3, 2)  # field size in x direction
 field_z1d = np.linspace(0e-3, 1e-3, 2)  # field size in z direction
 
-dx = 20e-3
-dz = 80e-3
+dx = 0e-3
+dz = 50e-3
 
 field_x2d, field_z2d = np.meshgrid(
     field_x1d + dx, field_z1d + dz
@@ -558,7 +558,11 @@ def main():
     beamLine.alignE = E0
     plots = define_plots()
     xrtrun.run_ray_tracing(
-        plots=plots, repeats=1, processes=1, backend=r"raycing", beamLine=beamLine
+        plots=plots, 
+        repeats=2, 
+        processes=2, 
+        backend=r"raycing", 
+        beamLine=beamLine
     )
     # beamLine.glow()
 
@@ -575,35 +579,37 @@ def main():
     xr = (np.nanmin(x), np.nanmax(x))
     zr = (np.nanmin(z), np.nanmax(z))
 
-    fwhm_x, xL, xR = fwhm_from_samples(
-        x, bins=min(round(np.sum(good) / 100), 512), range=xr, baseline=0.0
-    )
-    fwhm_z, zL, zR = fwhm_from_samples(
-        z, bins=min([round(np.sum(good) / 100), 512]), range=zr, baseline=0.0
-    )
+    # fwhm_x, xL, xR = fwhm_from_samples(
+    #     x, bins=min(round(np.sum(good) / 100), 512), range=xr, baseline=0.0
+    # )
+    # fwhm_z, zL, zR = fwhm_from_samples(
+    #     z, bins=min([round(np.sum(good) / 100), 512]), range=zr, baseline=0.0
+    # )
+    fwhm_x = plots[-1].dx
+    fwhm_z = plots[-1].dy
 
     print(f"[Screen @ local]  FWHM_x = {fwhm_x:.6e} mm  ({fwhm_x*1e3:.3f} µm)")
     print(f"[Screen @ local]  FWHM_z = {fwhm_z:.6e} mm  ({fwhm_z*1e3:.3f} µm)")
 
-    # Combined figure: scatter (x, z) and histogram of z
-    fig, ax = plt.subplots(1, 2, figsize=(12, 5))
+    # # Combined figure: scatter (x, z) and histogram of z
+    # fig, ax = plt.subplots(1, 2, figsize=(12, 5))
 
-    # Scatter plot of (x, z)
-    ax[0].scatter(x * 1e3, z * 1e3, s=1)
-    ax[0].set_xlabel("x (µm)")
-    ax[0].set_ylabel("z (µm)")
-    ax[0].set_title("Scatter plot of (x, z) at the screen")
-    ax[0].grid()
+    # # Scatter plot of (x, z)
+    # ax[0].scatter(x * 1e3, z * 1e3, s=1)
+    # ax[0].set_xlabel("x (µm)")
+    # ax[0].set_ylabel("z (µm)")
+    # ax[0].set_title("Scatter plot of (x, z) at the screen")
+    # ax[0].grid()
 
-    # Histogram of z
-    ax[1].hist(z * 1e3, bins=100, range=(zr[0] * 1e3, zr[1] * 1e3))
-    ax[1].set_xlabel("z (µm)")
-    ax[1].set_ylabel("Counts")
-    ax[1].set_title("Histogram of z at the screen")
-    ax[1].grid()
+    # # Histogram of z
+    # ax[1].hist(z * 1e3, bins=100, range=(zr[0] * 1e3, zr[1] * 1e3))
+    # ax[1].set_xlabel("z (µm)")
+    # ax[1].set_ylabel("Counts")
+    # ax[1].set_title("Histogram of z at the screen")
+    # ax[1].grid()
 
-    plt.tight_layout()
-    plt.show()
+    # plt.tight_layout()
+    # plt.show()
 
 
 if __name__ == "__main__":

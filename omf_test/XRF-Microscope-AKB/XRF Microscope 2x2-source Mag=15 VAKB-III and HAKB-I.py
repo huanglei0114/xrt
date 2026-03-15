@@ -21,8 +21,8 @@ import xrt.backends.raycing as raycing
 import xrt.plotter as xrtplot
 import xrt.runner as xrtrun
 
-import matplotlib
-matplotlib.use("Agg")  # Use non-interactive backend for plotting
+import matplotlib.pyplot as plt
+
 
 def _fwhm_from_hist(x, bins=201, rng=None, baseline=0.0):
     """
@@ -72,7 +72,7 @@ def fwhm_from_samples(samples, bins=201, range=None, baseline=0.0):
 
 # VAKB-III geometry config
 script_dir = Path(__file__).resolve().parent
-config_path = script_dir / "Mag=15 AKB-III Geometry Config.json"
+config_path = script_dir / "Mag=18 AKB-III Geometry Config.json"
 
 with config_path.open("r") as f:
     config = json.load(f)
@@ -95,7 +95,7 @@ mve_l = mve_lu + mve_ld
 
 # HAKB-I geometry config
 script_dir = Path(__file__).resolve().parent
-config_path = script_dir / "Mag=15 AKB-I Geometry Config.json"
+config_path = script_dir / "Mag=18 AKB-I Geometry Config.json"
 
 with config_path.open("r") as f:
     config = json.load(f)
@@ -117,8 +117,8 @@ mhe_l = mhe_lu + mhe_ld
 
 # ===========================================================
 
-source_fwhm_x = 1.0e-3  # FWHM in x direction in meters
-source_fwhm_z = 1.0e-3  # FWHM in z direction in meters
+source_fwhm_x = 0.67e-3  # FWHM in x direction in meters
+source_fwhm_z = 0.67e-3  # FWHM in z direction in meters
 
 src_dx = source_fwhm_x / 2.355  # calculate RMS from FWHM
 src_dz = source_fwhm_z / 2.355  # calculate RMS from FWHM
@@ -210,28 +210,42 @@ screen_x_axis = Rz @ Rx @ np.array([1, 0, 0]).T
 screen_z_axis = Rz @ Rx @ np.array([0, 0, 1]).T
 
 
-def build_beamline(field_x=0e-3, field_z=0e-3):
+field_x1d = np.linspace(0e-3, 1e-3, 2)  # field size in x direction
+field_z1d = np.linspace(0e-3, 1e-3, 2)  # field size in z direction
 
-    source_x = source_x0 + field_x
-    source_y = source_y0
-    source_z = source_z0 + field_z
+dx = 0e-3
+dz = 0e-3
 
-    # ===========================================================
+field_x2d, field_z2d = np.meshgrid(
+    field_x1d + dx, field_z1d + dz
+)  # create 2D grid of field points
+
+
+def build_beamline(nrays_per_source=1_000_000):  # field size in z direction
 
     beamLine = raycing.BeamLine()
+    beamLine.gs = {}
+    for idx, (field_x, field_z) in enumerate(
+        zip(field_x2d.flatten(), field_z2d.flatten())
+    ):
 
-    beamLine.geometricSource = rsources.GeometricSource(
-        bl=beamLine,
-        name="GS",
-        center=[source_x, source_y, source_z],
-        pitch=0,
-        nrays=1_000_000,
-        dx=src_dx,
-        dz=src_dz,
-        dxprime=src_dxprime,
-        dzprime=src_dzprime,
-        energies=[15_000.0],  # eV
-    )
+        source_x = source_x0 + field_x
+        source_y = source_y0
+        source_z = source_z0 + field_z
+
+        name = f"GS{idx:02d}"
+        beamLine.gs[name] = rsources.GeometricSource(
+            bl=beamLine,
+            name=name,
+            center=[source_x, source_y, source_z],
+            pitch=0,
+            nrays=nrays_per_source,
+            dx=src_dx,
+            dz=src_dz,
+            dxprime=src_dxprime,
+            dzprime=src_dzprime,
+            energies=[15_000.0],  # eV
+        )
 
     beamLine.m1_mask = rapts.RectangularAperture(
         bl=beamLine,
@@ -334,12 +348,21 @@ def build_beamline(field_x=0e-3, field_z=0e-3):
 
 def run_process(beamLine):
 
-    geometricSource01beamGlobal01 = beamLine.geometricSource.shine()
+    # Make an empty beam container and append each source beam into it
+    for idx, (field_x, field_z) in enumerate(
+        zip(field_x2d.flatten(), field_z2d.flatten())
+    ):
+        name = f"GS{idx:02d}"
+        src_beam = beamLine.gs[name].shine()
+        if idx == 0:
+            beam_total = src_beam
+        else:
+            beam_total.concatenate(src_beam)
 
-    m1_mask_local = beamLine.m1_mask.propagate(beam=geometricSource01beamGlobal01)
+    m1_mask_local = beamLine.m1_mask.propagate(beam=beam_total)
 
     mhhParam01beamGlobal01, mhhParam01beamLocal01 = beamLine.mhh.reflect(
-        beam=geometricSource01beamGlobal01
+        beam=beam_total
     )
 
     m2_mask_local = beamLine.m2_mask.propagate(beam=mhhParam01beamGlobal01)
@@ -360,7 +383,7 @@ def run_process(beamLine):
     screen01beamLocal01 = beamLine.screen.expose(beam=mvhParam01beamGlobal01)
 
     outDict = {
-        "geometricSource01beamGlobal01": geometricSource01beamGlobal01,
+        "beam_total": beam_total,
         "m1_mask_local": m1_mask_local,
         "mhhParam01beamGlobal01": mhhParam01beamGlobal01,
         "mhhParam01beamLocal01": mhhParam01beamLocal01,
@@ -377,31 +400,31 @@ def run_process(beamLine):
 
     beamLine.prepare_flow()
 
-    # # === FWHM at screen (local coordinates) ==============================
-    # # Keep only good rays
-    # b = screen01beamLocal01
-    # # XRT typically flags good rays with state == 1
-    # good = b.state == 1
+    # === FWHM at screen (local coordinates) ==============================
+    # Keep only good rays
+    b = screen01beamLocal01
+    # XRT typically flags good rays with state == 1
+    good = b.state == 1
 
-    # x = b.x[good]  # meters
-    # z = b.z[good]  # meters
-    # xr = (np.nanmin(x), np.nanmax(x))
-    # zr = (np.nanmin(z), np.nanmax(z))
+    x = b.x[good]  # meters
+    z = b.z[good]  # meters
+    xr = (np.nanmin(x), np.nanmax(x))
+    zr = (np.nanmin(z), np.nanmax(z))
 
-    # fwhm_x, xL, xR = fwhm_from_samples(
-    #     x, bins=min([round(np.sum(good) / 100), 512]), range=xr, baseline=0.0
-    # )
-    # fwhm_z, zL, zR = fwhm_from_samples(
-    #     z, bins=min([round(np.sum(good) / 100), 512]), range=zr, baseline=0.0
-    # )
+    fwhm_x, xL, xR = fwhm_from_samples(
+        x, bins=min([round(np.sum(good) / 100), 512]), range=xr, baseline=0.0
+    )
+    fwhm_z, zL, zR = fwhm_from_samples(
+        z, bins=min([round(np.sum(good) / 100), 512]), range=zr, baseline=0.0
+    )
 
-    # print(f"[Screen @ local]  FWHM_x = {fwhm_x:.6e} mm  ({fwhm_x*1e3:.3f} µm)")
-    # print(f"[Screen @ local]  FWHM_z = {fwhm_z:.6e} mm  ({fwhm_z*1e3:.3f} µm)")
-    # # =====================================================================
+    print(f"[Screen @ local]  FWHM_x = {fwhm_x:.6e} mm  ({fwhm_x*1e3:.3f} µm)")
+    print(f"[Screen @ local]  FWHM_z = {fwhm_z:.6e} mm  ({fwhm_z*1e3:.3f} µm)")
+    # =====================================================================
 
-    # beamLine.fwhm_x = fwhm_x
-    # beamLine.fwhm_z = fwhm_z
-    # beamLine.screen01beamLocal01 = screen01beamLocal01
+    beamLine.fwhm_x = fwhm_x
+    beamLine.fwhm_z = fwhm_z
+    beamLine.screen01beamLocal01 = screen01beamLocal01
 
     return outDict
 
@@ -412,110 +435,110 @@ rrun.run_process = run_process
 def define_plots():
     plots = []
 
-    # Source = xrtplot.XYCPlot(
-    #     beam=r"geometricSource01beamGlobal01",
-    #     xaxis=xrtplot.XYCAxis(label=r"x", fwhmFormatStr=r"%.3f", unit="um", factor=1e3),
-    #     yaxis=xrtplot.XYCAxis(
-    #         label=r"z",
-    #         fwhmFormatStr=r"%.3f",
-    #         # limits=[source_z0*1e3-1500, source_z0*1e3+1500],
-    #         # offset=source_z0*1e3,
-    #         unit="um",
-    #         factor=1e3,
-    #     ),
-    #     caxis=xrtplot.XYCAxis(label=r"energy", unit=r"eV"),
-    #     title=r"Source",
-    #     aspect="equal",
-    # )
-    # plots.append(Source)
+    Source = xrtplot.XYCPlot(
+        beam=r"beam_total",
+        xaxis=xrtplot.XYCAxis(label=r"x", fwhmFormatStr=r"%.3f", unit="um", factor=1e3),
+        yaxis=xrtplot.XYCAxis(
+            label=r"z",
+            fwhmFormatStr=r"%.3f",
+            # limits=[source_z0*1e3-1500, source_z0*1e3+1500],
+            # offset=source_z0*1e3,
+            unit="um",
+            factor=1e3,
+        ),
+        caxis=xrtplot.XYCAxis(label=r"energy", unit=r"eV"),
+        title=r"Source",
+        aspect="equal",
+    )
+    plots.append(Source)
 
-    # MHH_Footprint = xrtplot.XYCPlot(
-    #     beam=r"mhhParam01beamLocal01",
-    #     xaxis=xrtplot.XYCAxis(
-    #         label=r"x",
-    #         fwhmFormatStr=r"%.3f",
-    #         # limits=[-1_000, 1_000],
-    #         unit="um",
-    #         factor=1e3,
-    #     ),
-    #     yaxis=xrtplot.XYCAxis(
-    #         label=r"y",
-    #         fwhmFormatStr=r"%.3f",
-    #         limits=[-mvh_lu * 1e3, mvh_ld * 1e3],
-    #         unit="um",
-    #         factor=1e3,
-    #     ),
-    #     caxis=xrtplot.XYCAxis(label=r"energy", unit=r"eV"),
-    #     title=r"Footprint",
-    #     aspect="auto",
-    # )
-    # plots.append(MHH_Footprint)
+    MHH_Footprint = xrtplot.XYCPlot(
+        beam=r"mhhParam01beamLocal01",
+        xaxis=xrtplot.XYCAxis(
+            label=r"x",
+            fwhmFormatStr=r"%.3f",
+            # limits=[-1_000, 1_000],
+            unit="um",
+            factor=1e3,
+        ),
+        yaxis=xrtplot.XYCAxis(
+            label=r"y",
+            fwhmFormatStr=r"%.3f",
+            limits=[-mvh_lu * 1e3, mvh_ld * 1e3],
+            unit="um",
+            factor=1e3,
+        ),
+        caxis=xrtplot.XYCAxis(label=r"energy", unit=r"eV"),
+        title=r"Footprint",
+        aspect="auto",
+    )
+    plots.append(MHH_Footprint)
 
-    # MHE_Footprint = xrtplot.XYCPlot(
-    #     beam=r"mheParam01beamLocal01",
-    #     xaxis=xrtplot.XYCAxis(
-    #         label=r"x",
-    #         fwhmFormatStr=r"%.3f",
-    #         # limits=[-5_000, 5_000],
-    #         unit="um",
-    #         factor=1e3,
-    #     ),
-    #     yaxis=xrtplot.XYCAxis(
-    #         label=r"y",
-    #         fwhmFormatStr=r"%.3f",
-    #         limits=[-mve_lu * 1e3, mve_ld * 1e3],
-    #         unit="um",
-    #         factor=1e3,
-    #     ),
-    #     caxis=xrtplot.XYCAxis(label=r"energy", unit=r"eV"),
-    #     title=r"Footprint",
-    #     aspect="auto",
-    # )
-    # plots.append(MHE_Footprint)
+    MHE_Footprint = xrtplot.XYCPlot(
+        beam=r"mheParam01beamLocal01",
+        xaxis=xrtplot.XYCAxis(
+            label=r"x",
+            fwhmFormatStr=r"%.3f",
+            # limits=[-5_000, 5_000],
+            unit="um",
+            factor=1e3,
+        ),
+        yaxis=xrtplot.XYCAxis(
+            label=r"y",
+            fwhmFormatStr=r"%.3f",
+            limits=[-mve_lu * 1e3, mve_ld * 1e3],
+            unit="um",
+            factor=1e3,
+        ),
+        caxis=xrtplot.XYCAxis(label=r"energy", unit=r"eV"),
+        title=r"Footprint",
+        aspect="auto",
+    )
+    plots.append(MHE_Footprint)
 
-    # MVE_Footprint = xrtplot.XYCPlot(
-    #     beam=r"mveParam01beamLocal01",
-    #     xaxis=xrtplot.XYCAxis(
-    #         label=r"x",
-    #         fwhmFormatStr=r"%.3f",
-    #         # limits=[-5_000, 5_000],
-    #         unit="um",
-    #         factor=1e3,
-    #     ),
-    #     yaxis=xrtplot.XYCAxis(
-    #         label=r"y",
-    #         fwhmFormatStr=r"%.3f",
-    #         limits=[-mve_lu * 1e3, mve_ld * 1e3],
-    #         unit="um",
-    #         factor=1e3,
-    #     ),
-    #     caxis=xrtplot.XYCAxis(label=r"energy", unit=r"eV"),
-    #     title=r"Footprint",
-    #     aspect="auto",
-    # )
-    # plots.append(MVE_Footprint)
+    MVE_Footprint = xrtplot.XYCPlot(
+        beam=r"mveParam01beamLocal01",
+        xaxis=xrtplot.XYCAxis(
+            label=r"x",
+            fwhmFormatStr=r"%.3f",
+            # limits=[-5_000, 5_000],
+            unit="um",
+            factor=1e3,
+        ),
+        yaxis=xrtplot.XYCAxis(
+            label=r"y",
+            fwhmFormatStr=r"%.3f",
+            limits=[-mve_lu * 1e3, mve_ld * 1e3],
+            unit="um",
+            factor=1e3,
+        ),
+        caxis=xrtplot.XYCAxis(label=r"energy", unit=r"eV"),
+        title=r"Footprint",
+        aspect="auto",
+    )
+    plots.append(MVE_Footprint)
 
-    # MVH_Footprint = xrtplot.XYCPlot(
-    #     beam=r"mvhParam01beamLocal01",
-    #     xaxis=xrtplot.XYCAxis(
-    #         label=r"x",
-    #         fwhmFormatStr=r"%.3f",
-    #         # limits=[-5_000, 5_000],
-    #         unit="um",
-    #         factor=1e3,
-    #     ),
-    #     yaxis=xrtplot.XYCAxis(
-    #         label=r"y",
-    #         fwhmFormatStr=r"%.3f",
-    #         limits=[-mve_lu * 1e3, mve_ld * 1e3],
-    #         unit="um",
-    #         factor=1e3,
-    #     ),
-    #     caxis=xrtplot.XYCAxis(label=r"energy", unit=r"eV"),
-    #     title=r"Footprint",
-    #     aspect="auto",
-    # )
-    # plots.append(MVH_Footprint)
+    MVH_Footprint = xrtplot.XYCPlot(
+        beam=r"mvhParam01beamLocal01",
+        xaxis=xrtplot.XYCAxis(
+            label=r"x",
+            fwhmFormatStr=r"%.3f",
+            # limits=[-5_000, 5_000],
+            unit="um",
+            factor=1e3,
+        ),
+        yaxis=xrtplot.XYCAxis(
+            label=r"y",
+            fwhmFormatStr=r"%.3f",
+            limits=[-mve_lu * 1e3, mve_ld * 1e3],
+            unit="um",
+            factor=1e3,
+        ),
+        caxis=xrtplot.XYCAxis(label=r"energy", unit=r"eV"),
+        title=r"Footprint",
+        aspect="auto",
+    )
+    plots.append(MVH_Footprint)
 
     Focus = xrtplot.XYCPlot(
         beam=r"screen01beamLocal01",
@@ -532,49 +555,64 @@ def define_plots():
 
 def main():
 
-    fwhm_x_um = []
-    fwhm_z_um = []
-    field_x_um = np.linspace(-50, 50, 21)
-    field_z_um = np.linspace(-20, 80, 21)
-    for field_z in field_z_um * 1e-3:
-        for field_x in field_x_um * 1e-3:
-            beamLine = build_beamline(field_x=field_x, field_z=field_z)
+    beamLine = build_beamline()
 
-            E0 = list(beamLine.geometricSource.energies)[0]
-            beamLine.alignE = E0
-            plots = define_plots()
-            xrtrun.run_ray_tracing(
-                plots=plots,
-                repeats=2,
-                processes=2,
-                backend=r"raycing",
-                beamLine=beamLine,
-                updateEvery=1e6,
-            )
-            # beamLine.glow()
+    E0 = list(beamLine.gs["GS02"].energies)[0]
+    beamLine.alignE = E0
+    plots = define_plots()
+    xrtrun.run_ray_tracing(
+        plots=plots, 
+        repeats=2, 
+        processes=2, 
+        backend=r"raycing", 
+        beamLine=beamLine
+    )
+    # beamLine.glow()
 
-            # wait for the ray tracing to finish and the plots to be ready
-            # when beamLine has fwhm_x and fwhm_z attributes, it means the ray tracing is done and the FWHM values are calculated
-            # while not hasattr(beamLine, "fwhm_x") or not hasattr(beamLine, "fwhm_z"):
-            #     plt.pause(0.1)
-            # fwhm_x_um.append(beamLine.fwhm_x * 1e3)
-            # fwhm_z_um.append(beamLine.fwhm_z * 1e3)
+    # === FWHM at screen (local coordinates) ==============================
 
-            fwhm_x_um.append(plots[-1].dx)
-            fwhm_z_um.append(plots[-1].dy)
+    # Keep only good rays
+    b = beamLine.screen01beamLocal01
+    # XRT typically flags good rays with state == 1
+    good = b.state == 1
+    print(f"[good]  good = {np.sum(good)}")
 
-    # Save the FWHM data to a JSON file
-    output_data = {
-        "field_x_um": field_x_um.tolist(),
-        "field_z_um": field_z_um.tolist(),
-        "fwhm_x_um": fwhm_x_um,
-        "fwhm_z_um": fwhm_z_um,
-    }
-    output_path = script_dir / "fwhm_data.json"
-    with output_path.open("w") as f:
-        json.dump(output_data, f, indent=4)
+    x = b.x[good]  # meters
+    z = b.z[good]  # meters
+    xr = (np.nanmin(x), np.nanmax(x))
+    zr = (np.nanmin(z), np.nanmax(z))
 
-    return fwhm_x_um, fwhm_z_um
+    # fwhm_x, xL, xR = fwhm_from_samples(
+    #     x, bins=min(round(np.sum(good) / 100), 512), range=xr, baseline=0.0
+    # )
+    # fwhm_z, zL, zR = fwhm_from_samples(
+    #     z, bins=min([round(np.sum(good) / 100), 512]), range=zr, baseline=0.0
+    # )
+    fwhm_x = plots[-1].dx
+    fwhm_z = plots[-1].dy
+
+    print(f"[Screen @ local]  FWHM_x = {fwhm_x:.6e} mm  ({fwhm_x*1e3:.3f} µm)")
+    print(f"[Screen @ local]  FWHM_z = {fwhm_z:.6e} mm  ({fwhm_z*1e3:.3f} µm)")
+
+    # # Combined figure: scatter (x, z) and histogram of z
+    # fig, ax = plt.subplots(1, 2, figsize=(12, 5))
+
+    # # Scatter plot of (x, z)
+    # ax[0].scatter(x * 1e3, z * 1e3, s=1)
+    # ax[0].set_xlabel("x (µm)")
+    # ax[0].set_ylabel("z (µm)")
+    # ax[0].set_title("Scatter plot of (x, z) at the screen")
+    # ax[0].grid()
+
+    # # Histogram of z
+    # ax[1].hist(z * 1e3, bins=100, range=(zr[0] * 1e3, zr[1] * 1e3))
+    # ax[1].set_xlabel("z (µm)")
+    # ax[1].set_ylabel("Counts")
+    # ax[1].set_title("Histogram of z at the screen")
+    # ax[1].grid()
+
+    # plt.tight_layout()
+    # plt.show()
 
 
 if __name__ == "__main__":
