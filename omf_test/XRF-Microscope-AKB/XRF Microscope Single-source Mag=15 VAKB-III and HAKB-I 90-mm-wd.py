@@ -225,7 +225,7 @@ def build_beamline(field_x=0e-3, field_z=0e-3):
         name="GS",
         center=[source_x, source_y, source_z],
         pitch=0,
-        nrays=1_000_000,
+        nrays=100_000,
         dx=src_dx,
         dz=src_dz,
         dxprime=src_dxprime,
@@ -251,8 +251,8 @@ def build_beamline(field_x=0e-3, field_z=0e-3):
         name="MHH",
         center=[mhh_x, mhh_y, mhh_z],
         theta=mhh_theta,
-        extraPitch=mhh_theta,
-        extraRoll=np.pi / 2,
+        pitch=mhh_theta,
+        roll=np.pi / 2,
         limPhysX=[-10.0, 10.0],
         limPhysY=[-mhh_lu, mhh_ld],
         p=mhh_p,
@@ -277,8 +277,8 @@ def build_beamline(field_x=0e-3, field_z=0e-3):
         name="MHE",
         center=[mhe_x, mhe_y, mhe_z],
         theta=mhe_theta,
-        extraPitch=mhh_theta * 2 + mhe_theta,
-        extraRoll=np.pi / 2,
+        pitch=mhh_theta * 2 + mhe_theta,
+        roll=np.pi / 2,
         limPhysX=[-10.0, 10.0],
         limPhysY=[-mhe_lu, mhe_ld],
         p=mhe_p,
@@ -290,8 +290,8 @@ def build_beamline(field_x=0e-3, field_z=0e-3):
         name="MVE",
         center=[mve_x, mve_y, mve_z],
         theta=mve_theta,
+        pitch=mve_theta,
         extraYaw=-(mhh_theta * 2 + mhe_theta * 2),
-        extraPitch=mve_theta,
         limPhysX=[-10.0, 10.0],
         limPhysY=[-mve_lu, mve_ld],
         p=mve_p,
@@ -303,9 +303,9 @@ def build_beamline(field_x=0e-3, field_z=0e-3):
         name="MVH",
         center=[mvh_x, mvh_y, mvh_z],
         theta=mvh_theta,
-        extraYaw=-(mhh_theta * 2 + mhe_theta * 2),
-        extraPitch=(-mve_theta * 2 + mvh_theta),
-        extraRoll=np.pi,
+        pitch=(-mve_theta * 2 + mvh_theta),
+        roll=np.pi,
+        extraYaw=(mhh_theta * 2 + mhe_theta * 2),
         limPhysX=[-10.0, 10.0],
         limPhysY=[-mvh_lu, mvh_ld],
         p=mvh_p,
@@ -376,32 +376,6 @@ def run_process(beamLine):
     }
 
     beamLine.prepare_flow()
-
-    # # === FWHM at screen (local coordinates) ==============================
-    # # Keep only good rays
-    # b = screen01beamLocal01
-    # # XRT typically flags good rays with state == 1
-    # good = b.state == 1
-
-    # x = b.x[good]  # meters
-    # z = b.z[good]  # meters
-    # xr = (np.nanmin(x), np.nanmax(x))
-    # zr = (np.nanmin(z), np.nanmax(z))
-
-    # fwhm_x, xL, xR = fwhm_from_samples(
-    #     x, bins=min([round(np.sum(good) / 100), 512]), range=xr, baseline=0.0
-    # )
-    # fwhm_z, zL, zR = fwhm_from_samples(
-    #     z, bins=min([round(np.sum(good) / 100), 512]), range=zr, baseline=0.0
-    # )
-
-    # print(f"[Screen @ local]  FWHM_x = {fwhm_x:.6e} mm  ({fwhm_x*1e3:.3f} µm)")
-    # print(f"[Screen @ local]  FWHM_z = {fwhm_z:.6e} mm  ({fwhm_z*1e3:.3f} µm)")
-    # # =====================================================================
-
-    # beamLine.fwhm_x = fwhm_x
-    # beamLine.fwhm_z = fwhm_z
-    # beamLine.screen01beamLocal01 = screen01beamLocal01
 
     return outDict
 
@@ -534,8 +508,8 @@ def main():
 
     fwhm_x_um = []
     fwhm_z_um = []
-    field_x_um = np.linspace(-50, 50, 21)
-    field_z_um = np.linspace(-20, 80, 21)
+    field_x_um = np.linspace(-0, 0, 1)
+    field_z_um = np.linspace(-30, 80, 1)
     for field_z in field_z_um * 1e-3:
         for field_x in field_x_um * 1e-3:
             beamLine = build_beamline(field_x=field_x, field_z=field_z)
@@ -545,8 +519,8 @@ def main():
             plots = define_plots()
             xrtrun.run_ray_tracing(
                 plots=plots,
-                repeats=2,
-                processes=2,
+                repeats=1,
+                processes=1,
                 backend=r"raycing",
                 beamLine=beamLine,
                 updateEvery=1e6,

@@ -70,47 +70,42 @@ def fwhm_from_samples(samples, bins=201, range=None, baseline=0.0):
 
 # load the XRF microscope geometry from the JSON file
 
-# VAKB-III geometry config
 script_dir = Path(__file__).resolve().parent
-config_path = script_dir / "Mag=18 AKB-III Geometry Config.json"
+config_path = script_dir / "Mag=46 both AKB-III Geometry Config.json"
 
 with config_path.open("r") as f:
     config = json.load(f)
 
-mvh_theta = config["mh_theta"]
-mvh_p = config["mh_q"] * 1e3
-mvh_q = config["mh_p"] * 1e3
-mvh_lu = config["mh_ld"] * 1e3
-mvh_ld = config["mh_lu"] * 1e3
+# VAKB-III geometry config
+mvh_theta = config["vmh_theta"]
+mvh_p = config["vmh_q"] * 1e3
+mvh_q = config["vmh_p"] * 1e3
+mvh_lu = config["vmh_ld"] * 1e3
+mvh_ld = config["vmh_lu"] * 1e3
 
-mve_theta = config["me_theta"]
-mve_p = config["me_q"] * 1e3
-mve_q = config["me_p"] * 1e3
-mve_lu = config["me_ld"] * 1e3
-mve_ld = config["me_lu"] * 1e3
+mve_theta = config["vme_theta"]
+mve_p = config["vme_q"] * 1e3
+mve_q = config["vme_p"] * 1e3
+mve_lu = config["vme_ld"] * 1e3
+mve_ld = config["vme_lu"] * 1e3
 
 mvh_l = mvh_lu + mvh_ld
 mve_l = mve_lu + mve_ld
 
 
-# HAKB-I geometry config
-script_dir = Path(__file__).resolve().parent
-config_path = script_dir / "Mag=18 AKB-I Geometry Config.json"
+# HAKB-III geometry config
 
-with config_path.open("r") as f:
-    config = json.load(f)
+mhh_theta = config["hmh_theta"]
+mhh_p = config["hmh_q"] * 1e3
+mhh_q = config["hmh_p"] * 1e3
+mhh_lu = config["hmh_ld"] * 1e3
+mhh_ld = config["hmh_lu"] * 1e3
 
-mhh_theta = config["mh_theta"]
-mhh_p = config["mh_q"] * 1e3
-mhh_q = config["mh_p"] * 1e3
-mhh_lu = config["mh_ld"] * 1e3
-mhh_ld = config["mh_lu"] * 1e3
-
-mhe_theta = config["me_theta"]
-mhe_p = config["me_q"] * 1e3
-mhe_q = config["me_p"] * 1e3
-mhe_lu = config["me_ld"] * 1e3
-mhe_ld = config["me_lu"] * 1e3
+mhe_theta = config["hme_theta"]
+mhe_p = config["hme_q"] * 1e3
+mhe_q = config["hme_p"] * 1e3
+mhe_lu = config["hme_ld"] * 1e3
+mhe_ld = config["hme_lu"] * 1e3
 
 mhh_l = mhh_lu + mhh_ld
 mhe_l = mhe_lu + mhe_ld
@@ -133,63 +128,72 @@ source_z0 = 0
 beam_angle_rotx = 0
 beam_angle_rotz = 0
 
-mhh_x = 0
-mhh_y = mhh_p
-mhh_z = 0
+mhe_x = 0
+mhe_y = mhe_p
+mhe_z = 0
 
-beam_angle_rotx_after_mhh = beam_angle_rotx
-beam_angle_rotz_after_mhh = beam_angle_rotz + mhh_theta * 2
+beam_angle_rotx_after_mhe = beam_angle_rotx
+beam_angle_rotz_after_mhe = beam_angle_rotz + mhe_theta * 2
 
-# screen_x = mhh_x + mhh_p * np.sin(beam_angle_rotz_after_mhh)
-# screen_y = mhh_y + mhh_p * np.cos(beam_angle_rotz_after_mhh)
-# screen_z = mhh_z + 0
-
-dist = abs(mhe_p - mhh_q)
-
-mhe_x = mhh_x + dist * np.sin(beam_angle_rotz_after_mhh)
-mhe_y = mhh_y + dist * np.cos(beam_angle_rotz_after_mhh)
-mhe_z = mhh_z + 0
-
-beam_angle_rotx_after_mhe = beam_angle_rotx_after_mhh + 0
-beam_angle_rotz_after_mhe = beam_angle_rotz_after_mhh + mhe_theta * 2
-
-# screen_x = mhe_x + mhe_q * np.sin(beam_angle_rotz_after_mhe)
-# screen_y = mhe_y + mhe_q * np.cos(beam_angle_rotz_after_mhe)
+# screen_x = mhe_x + mhe_p * np.sin(beam_angle_rotz_after_mhe)
+# screen_y = mhe_y + mhe_p * np.cos(beam_angle_rotz_after_mhe)
 # screen_z = mhe_z + 0
 
-dist = abs(mve_p - dist - mhh_p)
+dist = abs(mve_p - mhe_p)
 
 mve_x = mhe_x + dist * np.sin(beam_angle_rotz_after_mhe)
 mve_y = mhe_y + dist * np.cos(beam_angle_rotz_after_mhe)
 mve_z = mhe_z + 0
 
 beam_angle_rotx_after_mve = beam_angle_rotx_after_mhe + mve_theta * 2
-beam_angle_rotz_after_mve = beam_angle_rotz_after_mhe + 0
+beam_angle_rotz_after_mve = beam_angle_rotz_after_mhe
 
 # screen_x = mve_x + (mve_q * np.cos(beam_angle_rotx_after_mve)) * np.sin(beam_angle_rotz_after_mve)
 # screen_y = mve_y + (mve_q * np.cos(beam_angle_rotx_after_mve)) * np.cos(beam_angle_rotz_after_mve)
 # screen_z = mve_z + mve_q * np.sin(beam_angle_rotx_after_mve)
 
-dist = abs(mve_q - mvh_p)
+dist = abs(mhe_q - mhh_p - dist)
 
-mvh_x = mve_x + (dist * np.cos(beam_angle_rotx_after_mve)) * np.sin(
+mhh_x = mve_x + (dist * np.cos(beam_angle_rotx_after_mve)) * np.sin(
     beam_angle_rotz_after_mve
 )
-mvh_y = mve_y + (dist * np.cos(beam_angle_rotx_after_mve)) * np.cos(
+mhh_y = mve_y + (dist * np.cos(beam_angle_rotx_after_mve)) * np.cos(
     beam_angle_rotz_after_mve
 )
-mvh_z = mve_z + dist * np.sin(beam_angle_rotx_after_mve)
+mhh_z = mve_z + dist * np.sin(beam_angle_rotx_after_mve)
 
-beam_angle_rotx_after_mvh = beam_angle_rotx_after_mve - mvh_theta * 2
-beam_angle_rotz_after_mvh = beam_angle_rotz_after_mve + 0
+beam_angle_rotx_after_mhh = beam_angle_rotx_after_mve + 0
+beam_angle_rotz_after_mhh = beam_angle_rotz_after_mve - mhh_theta * 2
 
-screen_x = mvh_x + (mvh_q * np.cos(beam_angle_rotx_after_mvh)) * np.sin(
+# screen_x = mhh_x + (mhh_q * np.cos(beam_angle_rotx_after_mhh)) * np.sin(beam_angle_rotz_after_mhh)
+# screen_y = mhh_y + (mhh_q * np.cos(beam_angle_rotx_after_mhh)) * np.cos(beam_angle_rotz_after_mhh)
+# screen_z = mhh_z + mhh_q * np.sin(beam_angle_rotx_after_mhh)
+
+dist = abs(mhh_q - mvh_q)
+
+mvh_x = mhh_x + (dist * np.cos(beam_angle_rotx_after_mhh)) * np.sin(
+    beam_angle_rotz_after_mhh
+)
+mvh_y = mhh_y + (dist * np.cos(beam_angle_rotx_after_mhh)) * np.cos(
+    beam_angle_rotz_after_mhh
+)
+mvh_z = mhh_z + dist * np.sin(beam_angle_rotx_after_mhh)
+
+beam_angle_rotx_after_mvh = beam_angle_rotx_after_mhh - mvh_theta * 2
+beam_angle_rotz_after_mvh = beam_angle_rotz_after_mhh + 0
+
+# screen_x = mvh_x + (mvh_q * np.cos(beam_angle_rotx_after_mvh)) * np.sin(beam_angle_rotz_after_mvh)
+# screen_y = mvh_y + (mvh_q * np.cos(beam_angle_rotx_after_mvh)) * np.cos(beam_angle_rotz_after_mvh)
+# screen_z = mvh_z + mvh_q * np.sin(beam_angle_rotx_after_mvh)
+
+dist_screen = mvh_q / 2
+screen_x = mvh_x + (dist_screen * np.cos(beam_angle_rotx_after_mvh)) * np.sin(
     beam_angle_rotz_after_mvh
 )
-screen_y = mvh_y + (mvh_q * np.cos(beam_angle_rotx_after_mvh)) * np.cos(
+screen_y = mvh_y + (dist_screen * np.cos(beam_angle_rotx_after_mvh)) * np.cos(
     beam_angle_rotz_after_mvh
 )
-screen_z = mvh_z + mvh_q * np.sin(beam_angle_rotx_after_mvh)
+screen_z = mvh_z + dist_screen * np.sin(beam_angle_rotx_after_mvh)
 
 # Calcualte the rotated screen x and z axes
 Rz = np.array(
@@ -209,9 +213,8 @@ Rx = np.array(
 screen_x_axis = Rz @ Rx @ np.array([1, 0, 0]).T
 screen_z_axis = Rz @ Rx @ np.array([0, 0, 1]).T
 
-
-field_x1d = np.linspace(0e-3, 1e-3, 2)  # field size in x direction
-field_z1d = np.linspace(0e-3, 1e-3, 2)  # field size in z direction
+field_x1d = np.linspace(0e-3, 1e-3, 1)  # field size in x direction
+field_z1d = np.linspace(0e-3, 1e-3, 1)  # field size in z direction
 
 dx = 0e-3
 dz = 0e-3
@@ -221,7 +224,7 @@ field_x2d, field_z2d = np.meshgrid(
 )  # create 2D grid of field points
 
 
-def build_beamline(nrays_per_source=1_000_000):  # field size in z direction
+def build_beamline(nrays_per_source=100_000):  # field size in z direction
 
     beamLine = raycing.BeamLine()
     beamLine.gs = {}
@@ -251,34 +254,8 @@ def build_beamline(nrays_per_source=1_000_000):  # field size in z direction
         bl=beamLine,
         name="M1 Mask",
         center=[
-            mhh_x + np.sin(mhh_theta) * mhh_ld,
-            mhh_y + np.cos(mhh_theta) * mhh_ld,
-            mhh_z,
-        ],
-        opening=[-1000e-3, 0, -10, 10],
-        x=[1.0, 0.0, 0.0],
-        z=[0.0, 0.0, 1.0],
-    )
-
-    beamLine.mhh = roes.ConcaveHyperbolicCylindricalMirrorXMF(
-        bl=beamLine,
-        name="MHH",
-        center=[mhh_x, mhh_y, mhh_z],
-        theta=mhh_theta,
-        pitch=mhh_theta,
-        roll=np.pi / 2,
-        limPhysX=[-10.0, 10.0],
-        limPhysY=[-mhh_lu, mhh_ld],
-        p=mhh_p,
-        q=mhh_q,
-    )
-
-    beamLine.m2_mask = rapts.RectangularAperture(
-        bl=beamLine,
-        name="M2 Mask",
-        center=[
-            mhe_x + np.sin(mhh_theta * 2 + mhe_theta) * mhe_ld,
-            mhe_y + np.cos(mhh_theta * 2 + mhe_theta) * mhe_ld,
+            mhe_x + np.sin(mhe_theta) * mhe_ld,
+            mhe_y + np.cos(mhe_theta) * mhe_ld,
             mhe_z,
         ],
         opening=[-1000e-3, 0, -10, 10],
@@ -291,12 +268,26 @@ def build_beamline(nrays_per_source=1_000_000):  # field size in z direction
         name="MHE",
         center=[mhe_x, mhe_y, mhe_z],
         theta=mhe_theta,
-        pitch=mhh_theta * 2 + mhe_theta,
+        pitch=mhe_theta,
         roll=np.pi / 2,
+        extraYaw=0,
         limPhysX=[-10.0, 10.0],
         limPhysY=[-mhe_lu, mhe_ld],
         p=mhe_p,
         q=mhe_q,
+    )
+
+    beamLine.m2_mask = rapts.RectangularAperture(
+        bl=beamLine,
+        name="M2 Mask",
+        center=[
+            mve_x,
+            mve_y + np.cos(mve_theta) * mve_ld,
+            mve_z + np.sin(mve_theta) * mve_ld,
+        ],
+        opening=[-10, 10, -1000e-3, 0],
+        x=[1.0, 0.0, 0.0],
+        z=[0.0, 0.0, 1.0],
     )
 
     beamLine.mve = roes.ConcaveEllipticCylindricalMirrorXMF(
@@ -305,11 +296,26 @@ def build_beamline(nrays_per_source=1_000_000):  # field size in z direction
         center=[mve_x, mve_y, mve_z],
         theta=mve_theta,
         pitch=mve_theta,
-        extraYaw=-(mhh_theta * 2 + mhe_theta * 2),
+        roll=0,
+        extraYaw=-(mhe_theta * 2),
         limPhysX=[-10.0, 10.0],
         limPhysY=[-mve_lu, mve_ld],
         p=mve_p,
         q=mve_q,
+    )
+
+    beamLine.mhh = roes.ConvexHyperbolicCylindricalMirrorXMF(
+        bl=beamLine,
+        name="MHH",
+        center=[mhh_x, mhh_y, mhh_z],
+        theta=mhh_theta,
+        pitch=-(mhe_theta * 2 - mhh_theta),
+        roll=-np.pi / 2,
+        extraYaw=-(mve_theta * 2),
+        limPhysX=[-10.0, 10.0],
+        limPhysY=[-mhh_lu, mhh_ld],
+        p=mhh_p,
+        q=mhh_q,
     )
 
     beamLine.mvh = roes.ConvexHyperbolicCylindricalMirrorXMF(
@@ -317,9 +323,9 @@ def build_beamline(nrays_per_source=1_000_000):  # field size in z direction
         name="MVH",
         center=[mvh_x, mvh_y, mvh_z],
         theta=mvh_theta,
-        pitch=(-mve_theta * 2 + mvh_theta),
+        pitch=-(mve_theta * 2 - mvh_theta),
         roll=np.pi,
-        extraYaw=(mhh_theta * 2 + mhe_theta * 2),
+        extraYaw=(mhe_theta * 2 - mhh_theta * 2),
         limPhysX=[-10.0, 10.0],
         limPhysY=[-mvh_lu, mvh_ld],
         p=mvh_p,
@@ -330,7 +336,7 @@ def build_beamline(nrays_per_source=1_000_000):  # field size in z direction
         bl=beamLine,
         name="Screen Mask",
         center=[screen_x, screen_y, screen_z],
-        opening=[-2, 2, -2, 2],
+        opening=[-5, 5, -5, 5],
         x=[1.0, 0.0, 0.0],
         z=[0.0, 0.0, 1.0],
     )
@@ -361,22 +367,22 @@ def run_process(beamLine):
 
     m1_mask_local = beamLine.m1_mask.propagate(beam=beam_total)
 
-    mhhParam01beamGlobal01, mhhParam01beamLocal01 = beamLine.mhh.reflect(
+    mheParam01beamGlobal01, mheParam01beamLocal01 = beamLine.mhe.reflect(
         beam=beam_total
     )
 
-    m2_mask_local = beamLine.m2_mask.propagate(beam=mhhParam01beamGlobal01)
-
-    mheParam01beamGlobal01, mheParam01beamLocal01 = beamLine.mhe.reflect(
-        beam=mhhParam01beamGlobal01
-    )
+    m2_mask_local = beamLine.m2_mask.propagate(beam=mheParam01beamGlobal01)
 
     mveParam01beamGlobal01, mveParam01beamLocal01 = beamLine.mve.reflect(
         beam=mheParam01beamGlobal01
     )
 
-    mvhParam01beamGlobal01, mvhParam01beamLocal01 = beamLine.mvh.reflect(
+    mhhParam01beamGlobal01, mhhParam01beamLocal01 = beamLine.mhh.reflect(
         beam=mveParam01beamGlobal01
+    )
+
+    mvhParam01beamGlobal01, mvhParam01beamLocal01 = beamLine.mvh.reflect(
+        beam=mhhParam01beamGlobal01
     )
 
     screen_mask_local = beamLine.screen_mask.propagate(beam=mvhParam01beamGlobal01)
@@ -385,13 +391,13 @@ def run_process(beamLine):
     outDict = {
         "beam_total": beam_total,
         "m1_mask_local": m1_mask_local,
-        "mhhParam01beamGlobal01": mhhParam01beamGlobal01,
-        "mhhParam01beamLocal01": mhhParam01beamLocal01,
-        "m2_mask_local": m2_mask_local,
         "mheParam01beamGlobal01": mheParam01beamGlobal01,
         "mheParam01beamLocal01": mheParam01beamLocal01,
+        "m2_mask_local": m2_mask_local,
         "mveParam01beamGlobal01": mveParam01beamGlobal01,
         "mveParam01beamLocal01": mveParam01beamLocal01,
+        "mhhParam01beamGlobal01": mhhParam01beamGlobal01,
+        "mhhParam01beamLocal01": mhhParam01beamLocal01,
         "mvhParam01beamGlobal01": mvhParam01beamGlobal01,
         "mvhParam01beamLocal01": mvhParam01beamLocal01,
         "screen_mask_local": screen_mask_local,
@@ -399,33 +405,6 @@ def run_process(beamLine):
     }
 
     beamLine.prepare_flow()
-
-    # === FWHM at screen (local coordinates) ==============================
-    # Keep only good rays
-    b = screen01beamLocal01
-    # XRT typically flags good rays with state == 1
-    good = b.state == 1
-
-    x = b.x[good]  # meters
-    z = b.z[good]  # meters
-    xr = (np.nanmin(x), np.nanmax(x))
-    zr = (np.nanmin(z), np.nanmax(z))
-
-    fwhm_x, xL, xR = fwhm_from_samples(
-        x, bins=min([round(np.sum(good) / 100), 512]), range=xr, baseline=0.0
-    )
-    fwhm_z, zL, zR = fwhm_from_samples(
-        z, bins=min([round(np.sum(good) / 100), 512]), range=zr, baseline=0.0
-    )
-
-    print(f"[Screen @ local]  FWHM_x = {fwhm_x:.6e} mm  ({fwhm_x*1e3:.3f} µm)")
-    print(f"[Screen @ local]  FWHM_z = {fwhm_z:.6e} mm  ({fwhm_z*1e3:.3f} µm)")
-    # =====================================================================
-
-    beamLine.fwhm_x = fwhm_x
-    beamLine.fwhm_z = fwhm_z
-    beamLine.screen01beamLocal01 = screen01beamLocal01
-
     return outDict
 
 
@@ -557,7 +536,7 @@ def main():
 
     beamLine = build_beamline()
 
-    E0 = list(beamLine.gs["GS02"].energies)[0]
+    E0 = list(beamLine.gs["GS00"].energies)[0]
     beamLine.alignE = E0
     plots = define_plots()
     xrtrun.run_ray_tracing(
@@ -571,16 +550,16 @@ def main():
 
     # === FWHM at screen (local coordinates) ==============================
 
-    # Keep only good rays
-    b = beamLine.screen01beamLocal01
-    # XRT typically flags good rays with state == 1
-    good = b.state == 1
-    print(f"[good]  good = {np.sum(good)}")
+    # # Keep only good rays
+    # b = beamLine.screen01beamLocal01
+    # # XRT typically flags good rays with state == 1
+    # good = b.state == 1
+    # print(f"[good]  good = {np.sum(good)}")
 
-    x = b.x[good]  # meters
-    z = b.z[good]  # meters
-    xr = (np.nanmin(x), np.nanmax(x))
-    zr = (np.nanmin(z), np.nanmax(z))
+    # x = b.x[good]  # meters
+    # z = b.z[good]  # meters
+    # xr = (np.nanmin(x), np.nanmax(x))
+    # zr = (np.nanmin(z), np.nanmax(z))
 
     # fwhm_x, xL, xR = fwhm_from_samples(
     #     x, bins=min(round(np.sum(good) / 100), 512), range=xr, baseline=0.0

@@ -120,8 +120,8 @@ source_fwhm_z = 1.0e-3  # FWHM in z direction in meters
 src_dx = source_fwhm_x / 2.355  # calculate RMS from FWHM
 src_dz = source_fwhm_z / 2.355  # calculate RMS from FWHM
 
-src_dxprime = 2e-3 / 2.355  # calculate RMS from FWHM
-src_dzprime = 2e-3 / 2.355  # calculate RMS from FWHM
+src_dxprime = 3e-3 / 2.355  # calculate RMS from FWHM
+src_dzprime = 3e-3 / 2.355  # calculate RMS from FWHM
 
 source_x0 = 0
 source_y0 = 0
@@ -516,8 +516,8 @@ def main():
 
     fwhm_x_um = []
     fwhm_z_um = []
-    field_x_um = np.linspace(-0, 0, 1)
-    field_z_um = np.linspace(-0, 0, 1)
+    field_x_um = np.linspace(0, 0, 1)
+    field_z_um = np.linspace(0, 0, 1)
     for field_z in field_z_um * 1e-3:
         for field_x in field_x_um * 1e-3:
             beamLine = build_beamline(field_x=field_x, field_z=field_z)
@@ -533,7 +533,7 @@ def main():
                 beamLine=beamLine,
                 updateEvery=1e6,
             )
-            beamLine.glow()
+            # beamLine.glow()
 
             # wait for the ray tracing to finish and the plots to be ready
             # when beamLine has fwhm_x and fwhm_z attributes, it means the ray tracing is done and the FWHM values are calculated
