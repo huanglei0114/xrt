@@ -22,7 +22,9 @@ import xrt.plotter as xrtplot
 import xrt.runner as xrtrun
 
 import matplotlib
+
 # matplotlib.use("Agg")  # Use non-interactive backend for plotting
+
 
 def _fwhm_from_hist(x, bins=201, rng=None, baseline=0.0):
     """
@@ -118,8 +120,8 @@ source_fwhm_z = 1.0e-3  # FWHM in z direction in meters
 src_dx = source_fwhm_x / 2.355  # calculate RMS from FWHM
 src_dz = source_fwhm_z / 2.355  # calculate RMS from FWHM
 
-src_dxprime = 8e-3 / 2.355  # calculate RMS from FWHM
-src_dzprime = 8e-3 / 2.355  # calculate RMS from FWHM
+src_dxprime = 2e-3 / 2.355  # calculate RMS from FWHM
+src_dzprime = 2e-3 / 2.355  # calculate RMS from FWHM
 
 source_x0 = 0
 source_y0 = 0
@@ -154,8 +156,12 @@ beam_angle_rotz_after_mve = beam_angle_rotz_after_mhe
 
 dist = abs(mhe_q - mhh_p - dist)
 
-mhh_x = mve_x + (dist * np.cos(beam_angle_rotx_after_mve)) * np.sin(beam_angle_rotz_after_mve)
-mhh_y = mve_y + (dist * np.cos(beam_angle_rotx_after_mve)) * np.cos(beam_angle_rotz_after_mve)
+mhh_x = mve_x + (dist * np.cos(beam_angle_rotx_after_mve)) * np.sin(
+    beam_angle_rotz_after_mve
+)
+mhh_y = mve_y + (dist * np.cos(beam_angle_rotx_after_mve)) * np.cos(
+    beam_angle_rotz_after_mve
+)
 mhh_z = mve_z + dist * np.sin(beam_angle_rotx_after_mve)
 
 beam_angle_rotx_after_mhh = beam_angle_rotx_after_mve + 0
@@ -167,16 +173,29 @@ beam_angle_rotz_after_mhh = beam_angle_rotz_after_mve - mhh_theta * 2
 
 dist = abs(mhh_q - mvh_q)
 
-mvh_x = mhh_x + (dist * np.cos(beam_angle_rotx_after_mhh)) * np.sin(beam_angle_rotz_after_mhh)
-mvh_y = mhh_y + (dist * np.cos(beam_angle_rotx_after_mhh)) * np.cos(beam_angle_rotz_after_mhh)
+mvh_x = mhh_x + (dist * np.cos(beam_angle_rotx_after_mhh)) * np.sin(
+    beam_angle_rotz_after_mhh
+)
+mvh_y = mhh_y + (dist * np.cos(beam_angle_rotx_after_mhh)) * np.cos(
+    beam_angle_rotz_after_mhh
+)
 mvh_z = mhh_z + dist * np.sin(beam_angle_rotx_after_mhh)
 
 beam_angle_rotx_after_mvh = beam_angle_rotx_after_mhh - mvh_theta * 2
 beam_angle_rotz_after_mvh = beam_angle_rotz_after_mhh + 0
 
-screen_x = mvh_x + (mvh_q * np.cos(beam_angle_rotx_after_mvh)) * np.sin(beam_angle_rotz_after_mvh)
-screen_y = mvh_y + (mvh_q * np.cos(beam_angle_rotx_after_mvh)) * np.cos(beam_angle_rotz_after_mvh)
-screen_z = mvh_z + mvh_q * np.sin(beam_angle_rotx_after_mvh)
+# screen_x = mvh_x + (mvh_q * np.cos(beam_angle_rotx_after_mvh)) * np.sin(beam_angle_rotz_after_mvh)
+# screen_y = mvh_y + (mvh_q * np.cos(beam_angle_rotx_after_mvh)) * np.cos(beam_angle_rotz_after_mvh)
+# screen_z = mvh_z + mvh_q * np.sin(beam_angle_rotx_after_mvh)
+
+dist_screen = mvh_q / 2
+screen_x = mvh_x + (dist_screen * np.cos(beam_angle_rotx_after_mvh)) * np.sin(
+    beam_angle_rotz_after_mvh
+)
+screen_y = mvh_y + (dist_screen * np.cos(beam_angle_rotx_after_mvh)) * np.cos(
+    beam_angle_rotz_after_mvh
+)
+screen_z = mvh_z + dist_screen * np.sin(beam_angle_rotx_after_mvh)
 
 # Calcualte the rotated screen x and z axes
 Rz = np.array(
@@ -212,7 +231,7 @@ def build_beamline(field_x=0e-3, field_z=0e-3):
         name="GS",
         center=[source_x, source_y, source_z],
         pitch=0,
-        nrays=1_000_000,
+        nrays=10_000,
         dx=src_dx,
         dz=src_dz,
         dxprime=src_dxprime,
@@ -238,8 +257,9 @@ def build_beamline(field_x=0e-3, field_z=0e-3):
         name="MHE",
         center=[mhe_x, mhe_y, mhe_z],
         theta=mhe_theta,
-        extraPitch=mhe_theta,
-        extraRoll=np.pi / 2,
+        pitch=mhe_theta,
+        roll=np.pi / 2,
+        extraYaw=0,
         limPhysX=[-10.0, 10.0],
         limPhysY=[-mhe_lu, mhe_ld],
         p=mhe_p,
@@ -264,22 +284,23 @@ def build_beamline(field_x=0e-3, field_z=0e-3):
         name="MVE",
         center=[mve_x, mve_y, mve_z],
         theta=mve_theta,
+        pitch=mve_theta,
+        roll=0,
         extraYaw=-(mhe_theta * 2),
-        extraPitch=mve_theta,
         limPhysX=[-10.0, 10.0],
         limPhysY=[-mve_lu, mve_ld],
         p=mve_p,
         q=mve_q,
     )
 
-    beamLine.mhh = roes.ConcaveHyperbolicCylindricalMirrorXMF(
+    beamLine.mhh = roes.ConvexHyperbolicCylindricalMirrorXMF(
         bl=beamLine,
         name="MHH",
         center=[mhh_x, mhh_y, mhh_z],
         theta=mhh_theta,
+        pitch=-(mhe_theta * 2 - mhh_theta),
+        roll=-np.pi / 2,
         extraYaw=-(mve_theta * 2),
-        extraPitch=mhh_theta,
-        extraRoll=-np.pi / 2,
         limPhysX=[-10.0, 10.0],
         limPhysY=[-mhh_lu, mhh_ld],
         p=mhh_p,
@@ -291,9 +312,9 @@ def build_beamline(field_x=0e-3, field_z=0e-3):
         name="MVH",
         center=[mvh_x, mvh_y, mvh_z],
         theta=mvh_theta,
-        extraYaw=-(mhh_theta * 2 + mhe_theta * 2),
-        extraPitch=(-mve_theta * 2 + mvh_theta),
-        extraRoll=np.pi,
+        pitch=-(mve_theta * 2 - mvh_theta),
+        roll=np.pi,
+        extraYaw=(mhe_theta * 2 - mhh_theta * 2),
         limPhysX=[-10.0, 10.0],
         limPhysY=[-mvh_lu, mvh_ld],
         p=mvh_p,
@@ -309,19 +330,12 @@ def build_beamline(field_x=0e-3, field_z=0e-3):
         z=[0.0, 0.0, 1.0],
     )
 
-    # beamLine.screen = rscreens.Screen(
-    #     bl=beamLine,
-    #     name="Screen",
-    #     center=[screen_x, screen_y, screen_z],
-    #     x=screen_x_axis,
-    #     z=screen_z_axis,
-    # )
-
     beamLine.screen = rscreens.Screen(
         bl=beamLine,
         name="Screen",
         center=[screen_x, screen_y, screen_z],
-        x='auto',
+        x=screen_x_axis,
+        z=screen_z_axis,
     )
 
     return beamLine
@@ -351,11 +365,8 @@ def run_process(beamLine):
         beam=mhhParam01beamGlobal01
     )
 
-    # screen_mask_local = beamLine.screen_mask.propagate(beam=mvhParam01beamGlobal01)
-    # screen01beamLocal01 = beamLine.screen.expose(beam=mvhParam01beamGlobal01)
-
-    screen_mask_local = beamLine.screen_mask.propagate(beam=mheParam01beamGlobal01)
-    screen01beamLocal01 = beamLine.screen.expose(beam=mheParam01beamGlobal01)
+    screen_mask_local = beamLine.screen_mask.propagate(beam=mvhParam01beamGlobal01)
+    screen01beamLocal01 = beamLine.screen.expose(beam=mvhParam01beamGlobal01)
 
     outDict = {
         "geometricSource01beamGlobal01": geometricSource01beamGlobal01,
@@ -465,7 +476,7 @@ def define_plots():
     #     aspect="auto",
     # )
     # plots.append(MHH_Footprint)
-    
+
     # MVH_Footprint = xrtplot.XYCPlot(
     #     beam=r"mvhParam01beamLocal01",
     #     xaxis=xrtplot.XYCAxis(
