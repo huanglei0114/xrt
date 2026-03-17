@@ -14,7 +14,6 @@ field_z_um = np.array(fwhm_data["field_z_um"])
 fwhm_x_um = np.array(fwhm_data["fwhm_x_um"])
 fwhm_z_um = np.array(fwhm_data["fwhm_z_um"])
 
-
 # Plot FWHM vs field
 if field_x_um.size > 1 and field_z_um.size == 1:
     fig, ax = plt.subplots(figsize=(8, 6))

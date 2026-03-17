@@ -182,18 +182,14 @@ mvh_z = mhh_z + dist * np.sin(beam_angle_rotx_after_mhh)
 beam_angle_rotx_after_mvh = beam_angle_rotx_after_mhh - mvh_theta * 2
 beam_angle_rotz_after_mvh = beam_angle_rotz_after_mhh + 0
 
-# screen_x = mvh_x + (mvh_q * np.cos(beam_angle_rotx_after_mvh)) * np.sin(beam_angle_rotz_after_mvh)
-# screen_y = mvh_y + (mvh_q * np.cos(beam_angle_rotx_after_mvh)) * np.cos(beam_angle_rotz_after_mvh)
-# screen_z = mvh_z + mvh_q * np.sin(beam_angle_rotx_after_mvh)
+screen_x = mvh_x + (mvh_q * np.cos(beam_angle_rotx_after_mvh)) * np.sin(
+    beam_angle_rotz_after_mvh
+)
+screen_y = mvh_y + (mvh_q * np.cos(beam_angle_rotx_after_mvh)) * np.cos(
+    beam_angle_rotz_after_mvh
+)
+screen_z = mvh_z + mvh_q * np.sin(beam_angle_rotx_after_mvh)
 
-dist_screen = mvh_q / 2
-screen_x = mvh_x + (dist_screen * np.cos(beam_angle_rotx_after_mvh)) * np.sin(
-    beam_angle_rotz_after_mvh
-)
-screen_y = mvh_y + (dist_screen * np.cos(beam_angle_rotx_after_mvh)) * np.cos(
-    beam_angle_rotz_after_mvh
-)
-screen_z = mvh_z + dist_screen * np.sin(beam_angle_rotx_after_mvh)
 
 # Calcualte the rotated screen x and z axes
 Rz = np.array(
@@ -213,10 +209,10 @@ Rx = np.array(
 screen_x_axis = Rz @ Rx @ np.array([1, 0, 0]).T
 screen_z_axis = Rz @ Rx @ np.array([0, 0, 1]).T
 
-field_x1d = np.linspace(0e-3, 1e-3, 1)  # field size in x direction
-field_z1d = np.linspace(0e-3, 1e-3, 1)  # field size in z direction
+field_x1d = np.linspace(0e-3, 1e-3, 2)  # field size in x direction
+field_z1d = np.linspace(0e-3, 1e-3, 2)  # field size in z direction
 
-dx = 0e-3
+dx = 15e-3
 dz = 0e-3
 
 field_x2d, field_z2d = np.meshgrid(
@@ -224,7 +220,7 @@ field_x2d, field_z2d = np.meshgrid(
 )  # create 2D grid of field points
 
 
-def build_beamline(nrays_per_source=100_000):  # field size in z direction
+def build_beamline(nrays_per_source=1_000_000):  # field size in z direction
 
     beamLine = raycing.BeamLine()
     beamLine.gs = {}
@@ -540,11 +536,7 @@ def main():
     beamLine.alignE = E0
     plots = define_plots()
     xrtrun.run_ray_tracing(
-        plots=plots, 
-        repeats=2, 
-        processes=2, 
-        backend=r"raycing", 
-        beamLine=beamLine
+        plots=plots, repeats=2, processes=2, backend=r"raycing", beamLine=beamLine
     )
     # beamLine.glow()
 
