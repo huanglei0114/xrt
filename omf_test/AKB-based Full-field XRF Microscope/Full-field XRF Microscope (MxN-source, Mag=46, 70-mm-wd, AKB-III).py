@@ -21,9 +21,132 @@ import xrt.backends.raycing as raycing
 import xrt.plotter as xrtplot
 import xrt.runner as xrtrun
 
-import matplotlib
+import matplotlib.pyplot as plt
 
-matplotlib.use("Agg")  # Use non-interactive backend for plotting
+
+# Define study modes
+class StudyMode:
+    SINGLE_SOURCE = "single_source"
+    M_X_N_SOURCES = "m_x_n_sources"
+    SCAN_X1D = "1d_x_scan"
+    SCAN_Z1D = "1d_z_scan"
+    SCAN_2D = "2d_scan"
+
+
+# =====================Input parameters==================
+
+source_fwhm_x = 0.67e-3  # FWHM in x direction in meters
+source_fwhm_z = 0.67e-3  # FWHM in z direction in meters
+
+akb_config_fname = "Mag=46 both AKB-III Geometry Config.json"
+study_mode = StudyMode.SCAN_X1D  # Change this to select the study mode
+
+if study_mode is StudyMode.SINGLE_SOURCE:
+    b_show_plots = True
+    b_show_glow = True
+    nrays_per_source = 100_000
+    # Local source grid
+    local_source_num_x = 1
+    local_source_num_z = 1
+    local_field_x1d = np.linspace(
+        0e-3, 0e-3, local_source_num_x
+    )  # field size in x direction
+    local_field_z1d = np.linspace(
+        0e-3, 0e-3, local_source_num_z
+    )  # field size in z direction
+    local_field_x2d, local_field_z2d = np.meshgrid(
+        local_field_x1d, local_field_z1d
+    )  # create 2D grid of field points
+    # Field localtions
+    field_x1d_um = np.array([0])  # Single source at the center
+    field_z1d_um = np.array([0])  # Single source at the center
+
+elif study_mode is StudyMode.M_X_N_SOURCES:
+    b_show_plots = True
+    b_show_glow = True
+    nrays_per_source = 100_000
+    # Local source grid
+    local_source_num_x = 2
+    local_source_num_z = 2
+    local_field_x1d = np.linspace(
+        0e-3, 1e-3, local_source_num_x
+    )  # field size in x direction
+    local_field_z1d = np.linspace(
+        0e-3, 1e-3, local_source_num_z
+    )  # field size in z direction
+    local_field_x2d, local_field_z2d = np.meshgrid(
+        local_field_x1d, local_field_z1d
+    )  # create 2D grid of field points
+    # Field localtions
+    field_x1d_um = np.array([0])  # Single source at the center
+    field_z1d_um = np.array([0])  # Single source at the center
+
+elif study_mode is StudyMode.SCAN_X1D:
+    b_show_plots = False
+    b_show_glow = False
+    nrays_per_source = 100_000
+    # Local source grid
+    local_source_num_x = 1
+    local_source_num_z = 1
+    local_field_x1d = np.linspace(
+        0e-3, 0e-3, local_source_num_x
+    )  # field size in x direction
+    local_field_z1d = np.linspace(
+        0e-3, 0e-3, local_source_num_z
+    )  # field size in z direction
+    local_field_x2d, local_field_z2d = np.meshgrid(
+        local_field_x1d, local_field_z1d
+    )  # create 2D grid of field points
+    # Field localtions
+    field_x1d_um = np.linspace(0, 2, 5)  # Field scan in x direction
+    field_z1d_um = np.array([0])  # Single source at the center
+
+elif study_mode is StudyMode.SCAN_Z1D:
+    b_show_plots = False
+    b_show_glow = False
+    nrays_per_source = 100_000
+    # Local source grid
+    local_source_num_x = 1
+    local_source_num_z = 1
+    local_field_x1d = np.linspace(
+        0e-3, 0e-3, local_source_num_x
+    )  # field size in x direction
+    local_field_z1d = np.linspace(
+        0e-3, 0e-3, local_source_num_z
+    )  # field size in z direction
+    local_field_x2d, local_field_z2d = np.meshgrid(
+        local_field_x1d, local_field_z1d
+    )  # create 2D grid of field points
+    # Field localtions
+    field_x1d_um = np.array([0])  # Single source at the center
+    field_z1d_um = np.linspace(-2, 2, 5)  # Field scan in z direction
+
+elif study_mode is StudyMode.SCAN_2D:
+    b_show_plots = False
+    b_show_glow = False
+    nrays_per_source = 100_000
+    # Local source grid
+    local_source_num_x = 1
+    local_source_num_z = 1
+    local_field_x1d = np.linspace(
+        0e-3, 0e-3, local_source_num_x
+    )  # field size in x direction
+    local_field_z1d = np.linspace(
+        0e-3, 0e-3, local_source_num_z
+    )  # field size in z direction
+    local_field_x2d, local_field_z2d = np.meshgrid(
+        local_field_x1d, local_field_z1d
+    )  # create 2D grid of field points
+    # Field localtions
+    field_x1d_um = np.linspace(-2, 2, 5)  # Field scan in x direction
+    field_z1d_um = np.linspace(-2, 2, 5)  # Field scan in z direction
+
+energy = 15_000.0  # eV
+
+if not b_show_plots:
+    import matplotlib
+
+    matplotlib.use("Agg")  # Use non-interactive backend for plotting
 
 
 # ===========================================================
@@ -31,7 +154,7 @@ matplotlib.use("Agg")  # Use non-interactive backend for plotting
 # load the XRF microscope geometry from the JSON file
 
 script_dir = Path(__file__).resolve().parent
-config_path = script_dir / "Mag=46 both AKB-III Geometry Config.json"
+config_path = script_dir / akb_config_fname
 
 with config_path.open("r") as f:
     config = json.load(f)
@@ -71,9 +194,6 @@ mhh_l = mhh_lu + mhh_ld
 mhe_l = mhe_lu + mhe_ld
 
 # ===========================================================
-
-source_fwhm_x = 0.3e-3  # FWHM in x direction in meters
-source_fwhm_z = 0.3e-3  # FWHM in z direction in meters
 
 src_dx = source_fwhm_x / 2.355  # calculate RMS from FWHM
 src_dz = source_fwhm_z / 2.355  # calculate RMS from FWHM
@@ -142,18 +262,14 @@ mvh_z = mhh_z + dist * np.sin(beam_angle_rotx_after_mhh)
 beam_angle_rotx_after_mvh = beam_angle_rotx_after_mhh - mvh_theta * 2
 beam_angle_rotz_after_mvh = beam_angle_rotz_after_mhh + 0
 
-screen_x = mvh_x + (mvh_q * np.cos(beam_angle_rotx_after_mvh)) * np.sin(beam_angle_rotz_after_mvh)
-screen_y = mvh_y + (mvh_q * np.cos(beam_angle_rotx_after_mvh)) * np.cos(beam_angle_rotz_after_mvh)
+screen_x = mvh_x + (mvh_q * np.cos(beam_angle_rotx_after_mvh)) * np.sin(
+    beam_angle_rotz_after_mvh
+)
+screen_y = mvh_y + (mvh_q * np.cos(beam_angle_rotx_after_mvh)) * np.cos(
+    beam_angle_rotz_after_mvh
+)
 screen_z = mvh_z + mvh_q * np.sin(beam_angle_rotx_after_mvh)
 
-# dist_screen = mvh_q / 2
-# screen_x = mvh_x + (dist_screen * np.cos(beam_angle_rotx_after_mvh)) * np.sin(
-#     beam_angle_rotz_after_mvh
-# )
-# screen_y = mvh_y + (dist_screen * np.cos(beam_angle_rotx_after_mvh)) * np.cos(
-#     beam_angle_rotz_after_mvh
-# )
-# screen_z = mvh_z + dist_screen * np.sin(beam_angle_rotx_after_mvh)
 
 # Calcualte the rotated screen x and z axes
 Rz = np.array(
@@ -174,28 +290,35 @@ screen_x_axis = Rz @ Rx @ np.array([1, 0, 0]).T
 screen_z_axis = Rz @ Rx @ np.array([0, 0, 1]).T
 
 
-def build_beamline(field_x=0e-3, field_z=0e-3):
+def build_beamline(nrays_per_source, energies, dx, dz):
 
-    source_x = source_x0 + field_x
-    source_y = source_y0
-    source_z = source_z0 + field_z
-
-    # ===========================================================
+    source_x_c = source_x0 + dx
+    source_y_c = source_y0
+    source_z_c = source_z0 + dz
 
     beamLine = raycing.BeamLine()
+    beamLine.gs = {}
+    for idx, (local_field_x, local_field_z) in enumerate(
+        zip(local_field_x2d.flatten(), local_field_z2d.flatten())
+    ):
 
-    beamLine.geometricSource = rsources.GeometricSource(
-        bl=beamLine,
-        name="GS",
-        center=[source_x, source_y, source_z],
-        pitch=0,
-        nrays=100_000,
-        dx=src_dx,
-        dz=src_dz,
-        dxprime=src_dxprime,
-        dzprime=src_dzprime,
-        energies=[15_000.0],  # eV
-    )
+        source_x = source_x_c + local_field_x
+        source_y = source_y_c
+        source_z = source_z_c + local_field_z
+
+        name = f"GS{idx:02d}"
+        beamLine.gs[name] = rsources.GeometricSource(
+            bl=beamLine,
+            name=name,
+            center=[source_x, source_y, source_z],
+            pitch=0,
+            nrays=nrays_per_source,
+            dx=src_dx,
+            dz=src_dz,
+            dxprime=src_dxprime,
+            dzprime=src_dzprime,
+            energies=energies,
+        )
 
     beamLine.m1_mask = rapts.RectangularAperture(
         bl=beamLine,
@@ -205,7 +328,7 @@ def build_beamline(field_x=0e-3, field_z=0e-3):
             mhe_y + np.cos(mhe_theta) * mhe_ld,
             mhe_z,
         ],
-        opening=[-1000e-3, 0, -10, 10],
+        opening=[-1, 0, -10, 10],  # 1 mm opening in x, full opening in y
         x=[1.0, 0.0, 0.0],
         z=[0.0, 0.0, 1.0],
     )
@@ -232,7 +355,7 @@ def build_beamline(field_x=0e-3, field_z=0e-3):
             mve_y + np.cos(mve_theta) * mve_ld,
             mve_z + np.sin(mve_theta) * mve_ld,
         ],
-        opening=[-10, 10, -1000e-3, 0],
+        opening=[-10, 10, -1, 0],  # 1 mm opening in z, full opening in x
         x=[1.0, 0.0, 0.0],
         z=[0.0, 0.0, 1.0],
     )
@@ -283,7 +406,7 @@ def build_beamline(field_x=0e-3, field_z=0e-3):
         bl=beamLine,
         name="Screen Mask",
         center=[screen_x, screen_y, screen_z],
-        opening=[-5, 5, -5, 5],
+        opening=[-5, 5, -5, 5],  # 10 mm x 10 mm opening
         x=[1.0, 0.0, 0.0],
         z=[0.0, 0.0, 1.0],
     )
@@ -301,12 +424,19 @@ def build_beamline(field_x=0e-3, field_z=0e-3):
 
 def run_process(beamLine):
 
-    geometricSource01beamGlobal01 = beamLine.geometricSource.shine()
+    # Make an empty beam container and append each source beam into it
+    for idx in range(local_source_num_x * local_source_num_z):
+        name = f"GS{idx:02d}"
+        src_beam = beamLine.gs[name].shine()
+        if idx == 0:
+            beam_total = src_beam
+        else:
+            beam_total.concatenate(src_beam)
 
-    m1_mask_local = beamLine.m1_mask.propagate(beam=geometricSource01beamGlobal01)
+    m1_mask_local = beamLine.m1_mask.propagate(beam=beam_total)
 
     mheParam01beamGlobal01, mheParam01beamLocal01 = beamLine.mhe.reflect(
-        beam=geometricSource01beamGlobal01
+        beam=beam_total
     )
 
     m2_mask_local = beamLine.m2_mask.propagate(beam=mheParam01beamGlobal01)
@@ -327,7 +457,7 @@ def run_process(beamLine):
     screen01beamLocal01 = beamLine.screen.expose(beam=mvhParam01beamGlobal01)
 
     outDict = {
-        "geometricSource01beamGlobal01": geometricSource01beamGlobal01,
+        "beam_total": beam_total,
         "m1_mask_local": m1_mask_local,
         "mheParam01beamGlobal01": mheParam01beamGlobal01,
         "mheParam01beamLocal01": mheParam01beamLocal01,
@@ -353,7 +483,7 @@ def define_plots():
     plots = []
 
     Source = xrtplot.XYCPlot(
-        beam=r"geometricSource01beamGlobal01",
+        beam=r"beam_total",
         xaxis=xrtplot.XYCAxis(label=r"x", fwhmFormatStr=r"%.3f", unit="um", factor=1e3),
         yaxis=xrtplot.XYCAxis(
             label=r"z",
@@ -447,7 +577,7 @@ def define_plots():
         yaxis=xrtplot.XYCAxis(
             label=r"y",
             fwhmFormatStr=r"%.3f",
-            limits=[-mvh_lu * 1e3, mvh_ld * 1e3],
+            limits=[-mve_lu * 1e3, mve_ld * 1e3],
             unit="um",
             factor=1e3,
         ),
@@ -471,16 +601,21 @@ def define_plots():
 
 
 def main():
-
     fwhm_x_um = []
     fwhm_z_um = []
-    field_x_um = np.linspace(0, 2, 5)
-    field_z_um = np.linspace(0, 0, 1)
-    for field_z in field_z_um * 1e-3:
-        for field_x in field_x_um * 1e-3:
-            beamLine = build_beamline(field_x=field_x, field_z=field_z)
+    field_x1d_mm = field_x1d_um * 1e-3
+    field_z1d_mm = field_z1d_um * 1e-3
+    for field_z in field_z1d_mm:
+        for field_x in field_x1d_mm:
+            beamLine = []
+            beamLine = build_beamline(
+                nrays_per_source=nrays_per_source,
+                energies=[energy],
+                dx=field_x,
+                dz=field_z,
+            )
 
-            E0 = list(beamLine.geometricSource.energies)[0]
+            E0 = list(beamLine.gs["GS00"].energies)[0]
             beamLine.alignE = E0
             plots = define_plots()
             xrtrun.run_ray_tracing(
@@ -490,26 +625,20 @@ def main():
                 backend=r"raycing",
                 beamLine=beamLine,
             )
-            # beamLine.glow()
-
-            # wait for the ray tracing to finish and the plots to be ready
-            # when beamLine has fwhm_x and fwhm_z attributes, it means the ray tracing is done and the FWHM values are calculated
-            # while not hasattr(beamLine, "fwhm_x") or not hasattr(beamLine, "fwhm_z"):
-            #     plt.pause(0.1)
-            # fwhm_x_um.append(beamLine.fwhm_x * 1e3)
-            # fwhm_z_um.append(beamLine.fwhm_z * 1e3)
+            if b_show_glow:
+                beamLine.glow()
 
             fwhm_x_um.append(plots[-1].dx)
             fwhm_z_um.append(plots[-1].dy)
 
     # Save the FWHM data to a JSON file
     output_data = {
-        "field_x_um": field_x_um.tolist(),
-        "field_z_um": field_z_um.tolist(),
+        "field_x_um": field_x1d_um.tolist(),
+        "field_z_um": field_z1d_um.tolist(),
         "fwhm_x_um": fwhm_x_um,
         "fwhm_z_um": fwhm_z_um,
     }
-    output_path = script_dir / "fwhm_data.json"
+    output_path = script_dir / "temp_fwhm_data.json"
     with output_path.open("w") as f:
         json.dump(output_data, f, indent=4)
 
